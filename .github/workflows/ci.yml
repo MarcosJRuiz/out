@@ -216,3 +216,76 @@ jobs:
           name: mobile-report
           path: mobile/reports/
           if-no-files-found: warn
+
+  # Relatório Allure consolidado (API + E2E + mobile) e resumo da execução na página da pipeline.
+  publish-reports:
+    needs: [api-tests, e2e-tests, e2e-known-defects, mobile-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # Cada download pode faltar se o job correspondente falhou antes de publicar; o relatório sai com o que existir.
+      - name: Baixar resultados de API
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: api-report
+          path: resultados/api
+
+      - name: Baixar resultados E2E
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-report
+          path: resultados/e2e
+
+      - name: Baixar resultados E2E (defeitos conhecidos)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-known-defects-report
+          path: resultados/e2e-known-defects
+
+      - name: Baixar resultados mobile
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mobile-report
+          path: resultados/mobile
+
+      - name: Consolidar resultados
+        run: >-
+          node scripts/relatorio-consolidado.mjs
+          API=resultados/api/allure-results
+          E2E=resultados/e2e/allure-results
+          E2E=resultados/e2e-known-defects/allure-results
+          Mobile=resultados/mobile/allure-results
+
+      - name: Gerar relatório Allure
+        run: npx allure generate reports/allure-results
+
+      - name: Resumo da execução
+        run: |
+          cat reports/resumo.md >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo ""
+            echo "**Relatório consolidado:** artifact \`relatorio-consolidado\` (Allure em arquivo HTML único, abre direto no navegador)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatório consolidado
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-consolidado
+          path: |
+            reports/allure-report/index.html
+            reports/resumo.md

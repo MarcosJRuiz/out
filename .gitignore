@@ -17,3 +17,6 @@ mobile/apps/*.apk
 # Ambiente
 .env
 .DS_Store
+
+# Relatório consolidado gerado localmente
+/reports/
