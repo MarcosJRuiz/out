@@ -30,6 +30,11 @@ test.describe('Tarefa 2 — formulário de endereço de entrega', () => {
     { tag: '@smoke' },
     async ({ endereco, pagamento, evidencia }) => {
       await endereco.preencher(ENDERECO);
+
+      // Confere o valor de cada campo antes de enviar (garante que o preenchimento foi aplicado).
+      for (const [campo, valor] of Object.entries(ENDERECO) as [keyof Endereco, string][]) {
+        await expect.poll(() => endereco.valorDe(campo), { message: `campo ${campo}` }).toBe(valor);
+      }
       await evidencia('formulario-preenchido');
 
       await endereco.irParaPagamento();
