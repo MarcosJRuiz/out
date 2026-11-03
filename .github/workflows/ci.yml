@@ -182,6 +182,20 @@ jobs:
       - name: Baixar APK
         run: npm run -w mobile app:download
 
+      # O download da imagem do Android (~1 GB) às vezes chega corrompido ("Error on ZipFile unknown archive").
+      # Baixar antes, com novas tentativas, evita perder a execução; a action abaixo reaproveita a imagem instalada.
+      - name: Baixar imagem do Android
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          for tentativa in 1 2 3; do
+            if yes | "$SDKMANAGER" --install "system-images;android-33;google_apis;x86_64" > /dev/null; then
+              exit 0
+            fi
+            echo "::warning::Falha ao baixar a imagem do Android (tentativa $tentativa); tentando de novo"
+            sleep 15
+          done
+          exit 1
+
       - name: Executar testes mobile no emulador
         uses: reactivecircus/android-emulator-runner@v2
         with:
