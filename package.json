@@ -3,6 +3,7 @@
   "private": true,
   "workspaces": [
     "api",
+    "e2e",
     "mobile"
   ],
   "engines": {
@@ -17,7 +18,8 @@
     "serverest:up": "docker compose up -d --wait serverest",
     "serverest:down": "docker compose down",
     "test:mobile": "npm run test -w mobile",
-    "test:api": "npm run test -w api"
+    "test:api": "npm run test -w api",
+    "test:e2e": "npm run test -w e2e"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
