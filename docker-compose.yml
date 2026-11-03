@@ -25,6 +25,7 @@ services:
       VUS: ${VUS:-500}
       PATAMAR: ${PATAMAR:-5m}
       RAMPA: ${RAMPA:-30s}
+      PAUSA: ${PAUSA:-1}
       K6_WEB_DASHBOARD: 'true'
       K6_WEB_DASHBOARD_EXPORT: /load/reports/k6-dashboard.html
     command: ['run', '/load/scripts/carga-500vus.js']

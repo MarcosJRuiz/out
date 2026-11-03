@@ -11,6 +11,9 @@ on:
       patamar:
         description: 'Duração com todos os usuários (ex.: 5m)'
         default: 5m
+      pausa:
+        description: 'Segundos entre as ações de cada usuário (0 = estresse)'
+        default: '1'
   schedule:
     - cron: '0 6 * * 1' # segunda-feira, 06:00 UTC
   push:
@@ -41,6 +44,7 @@ jobs:
       RESULTADOS: load/reports
       VUS: ${{ inputs.vus || '500' }}
       PATAMAR: ${{ inputs.patamar || '5m' }}
+      PAUSA: ${{ inputs.pausa || '1' }}
       K6_WEB_DASHBOARD: 'true'
       K6_WEB_DASHBOARD_EXPORT: load/reports/k6-dashboard.html
     steps:

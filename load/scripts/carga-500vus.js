@@ -3,7 +3,8 @@
 // Fluxo de cada usuário virtual (iteração): login → listar produtos → consultar um produto, com pausa de 1 s
 // entre as ações (tempo de leitura de um usuário real).
 //
-// Variáveis (opcionais): BASE_URL, VUS (padrão 500), PATAMAR (padrão 5m), RAMPA (padrão 30s).
+// Variáveis (opcionais): BASE_URL, VUS (padrão 500), PATAMAR (padrão 5m), RAMPA (padrão 30s) e
+// PAUSA (segundos entre ações, padrão 1; 0 = teste de estresse, sem tempo de leitura).
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
@@ -13,6 +14,7 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 const VUS = Number(__ENV.VUS || 500);
 const PATAMAR = __ENV.PATAMAR || '5m';
 const RAMPA = __ENV.RAMPA || '30s';
+const PAUSA = Number(__ENV.PAUSA ?? 1);
 const JSON_HEADERS = { headers: { 'Content-Type': 'application/json' } };
 
 // Tempo de cada etapa do fluxo, para localizar o gargalo.
@@ -74,7 +76,7 @@ export default function (massa) {
       'login: token Bearer': (res) => String(res.json('authorization') || '').startsWith('Bearer '),
     });
   });
-  sleep(1);
+  sleep(PAUSA);
 
   group('listar produtos', () => {
     const r = http.get(`${BASE_URL}/produtos`, { tags: { etapa: 'listagem' } });
@@ -84,7 +86,7 @@ export default function (massa) {
       'listagem: contém produtos': (res) => res.json('quantidade') > 0,
     });
   });
-  sleep(1);
+  sleep(PAUSA);
 
   group('consultar produto', () => {
     const id = massa.idsProdutos[Math.floor(Math.random() * massa.idsProdutos.length)];
@@ -95,7 +97,7 @@ export default function (massa) {
       'detalhe: produto correto': (res) => res.json('_id') === id,
     });
   });
-  sleep(1);
+  sleep(PAUSA);
 }
 
 export function teardown(massa) {
