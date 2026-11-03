@@ -1,0 +1,10 @@
+{
+  "name": "outsera-qa-automation",
+  "private": true,
+  "workspaces": [
+    "mobile"
+  ],
+  "engines": {
+    "node": ">=24.15.0"
+  }
+}

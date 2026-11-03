@@ -1,8 +1,20 @@
 # Plano de Implementação — Avaliação Outsera (Automação de Testes)
 
 > Documento de trabalho para revisarmos ponto a ponto antes de iniciar a implementação.
-> Base: `Avaliação Outsera - Automação de Testes.pdf` · Foco da vaga: **Playwright**
+> Base: `Avaliação Outsera - Automação de Testes.pdf` (não versionado) · Foco da vaga: **Playwright**
 > Local do projeto: `/usr/local/.app/ws/_diversos/out` (raiz do repositório)
+> Repositório: [github.com/MarcosJRuiz/out](https://github.com/MarcosJRuiz/out) — **privado** por enquanto (tornar público na entrega)
+> Última atualização: 03/11/2026 — exploração do E2E concluída e spike mobile na CI aprovado
+
+### Status atual
+
+| Etapa | Status |
+|---|---|
+| Plano e stack | Definidos (pendências na seção 10) |
+| Exploração do site E2E (AutomationExercise) | ✅ Concluída — atende o PDF; 2 defeitos confirmados (seção 4.2) |
+| Spike mobile na CI | ✅ Aprovado — branch `spike/mobile-ci` (seção 4.3) |
+| Repositório | ✅ Criado; histórico limpo sem o PDF |
+| Fases 0 a 6 | ⏳ Não iniciadas |
 
 ---
 
@@ -28,9 +40,9 @@
 |---|---|---|---|---|
 | `api/` | Playwright Test | `APIRequestContext` | ServeRest (local, Docker) | Playwright HTML + Allure |
 | `e2e/` | `@cucumber/cucumber` (puro) | Playwright (biblioteca) | AutomationExercise | Cucumber HTML (screenshots/vídeo/trace) + Allure |
-| `mobile/` | Playwright Test | WebdriverIO (standalone) → Appium 2 + UiAutomator2 | Sauce Labs My Demo App (Android) | Playwright HTML + Allure |
+| `mobile/` | Playwright Test | WebdriverIO (standalone) → Appium 3 + UiAutomator2 | Sauce Labs My Demo App (Android) | Playwright HTML + Allure |
 | `load/` | K6 | — | ServeRest (local, Docker) | K6 Web Dashboard (HTML) + `ANALISE.md` |
-| CI | GitHub Actions | 1 job por módulo | — | Allure consolidado no GitHub Pages + artifacts |
+| CI | GitHub Actions | 1 job por módulo | — | **Allure consolidado** (principal) + nativos como artifacts; GitHub Pages quando o repo for público |
 
 **Linguagem:** TypeScript em todos os módulos (K6 em JavaScript, padrão da ferramenta).
 
@@ -64,9 +76,10 @@ _diversos/out/
 │   ├── cucumber.js
 │   └── package.json
 ├── mobile/
-│   ├── tests/                 # login.spec.ts, formulario.spec.ts
+│   ├── tests/                 # login.spec.ts, formulario.spec.ts (spike.spec.ts é removido na Fase 3)
 │   ├── screens/               # Screen Objects
 │   ├── fixtures/              # driver.fixture.ts (WebdriverIO remote)
+│   ├── support/               # global-setup.ts (sobe/derruba o Appium)
 │   ├── apps/                  # APK baixado no setup (gitignored)
 │   ├── playwright.config.ts
 │   └── package.json
@@ -74,7 +87,9 @@ _diversos/out/
 │   ├── scripts/carga-500vus.js
 │   ├── reports/
 │   └── ANALISE.md
-├── .github/workflows/ci.yml
+├── .github/workflows/         # ci.yml (por commit) e load.yml (manual/agendado)
+├── docs/bugs/                 # bug reports (BUG-001 cartão inválido, BUG-002 endereço incompleto)
+├── evidencias/                # snapshot final dos relatórios versionado na entrega
 ├── docker-compose.yml         # ServeRest
 ├── package.json               # npm workspaces + scripts agregados
 ├── .gitignore  .editorconfig  .nvmrc  eslint/prettier
@@ -82,7 +97,7 @@ _diversos/out/
 └── README.md
 ```
 
-> ⚠️ **Ponto a avaliar:** o PDF da avaliação está nesta pasta. Sugestão: **não versionar** o PDF (adicionar ao `.gitignore`), pois é material da empresa; o README referencia os requisitos com nossas palavras.
+> **Decidido:** o PDF da avaliação **não é versionado** (`*.pdf` no `.gitignore`) e o histórico do repositório foi reescrito para removê-lo do primeiro commit. O README descreve os requisitos com nossas palavras.
 
 ---
 
@@ -121,9 +136,9 @@ _diversos/out/
 
 **Padrões:**
 - World customizado guardando `browser`, `context`, `page` e Page Objects.
-- Hooks: `Before` cria contexto isolado; `After` anexa **screenshot**, **vídeo** e **trace** (`context.tracing`) ao relatório quando falha.
+- Hooks: `Before` cria contexto isolado; `After` anexa **screenshot** ao relatório em **todos os cenários** (inclusive negativos que passam, como evidência da mensagem de erro) e, quando falha, também **vídeo** e **trace** (`context.tracing`).
 - Asserções com `expect` do `@playwright/test` (auto-wait), sem `waitForTimeout`.
-- Seletores estáveis (`data-test`, roles, labels).
+- Seletores estáveis: atributos `data-qa` do site (validados na exploração), roles e labels.
 - `Scenario Outline` + `Examples` para os negativos.
 - Tags: `@smoke`, `@login`, `@checkout`, `@negative`, `@known-defect`.
 - Execução multi-browser via variável (`BROWSER=chromium|firefox|webkit`).
@@ -145,7 +160,7 @@ _diversos/out/
 
 | # | Cenário | Tipo | Pedido no PDF? | Comportamento esperado | Site se comporta corretamente? |
 |---|---|---|---|---|---|
-| L1 | Login válido e navegação até o formulário **Contact Us** | Positivo | Sim | Exibe "Logged in as <nome>"; Contact Us abre com URL, título e campos corretos | **Sim** |
+| L1 | Login válido e navegação até o formulário **Contact Us** | Positivo | Sim | Após o login exibe "Logged in as <nome>"; no Contact Us: URL `/contact_us`, título "Get In Touch", campos do formulário visíveis e "Logged in as <nome>" ainda presente (sessão ativa) | **Sim** |
 | L2 | Senha incorreta | Negativo | Sim | Recusa o login com "Your email or password is incorrect!" | **Sim** |
 | L3 | Usuário inexistente | Negativo | Sim | Recusa o login com "Your email or password is incorrect!" | **Sim** |
 | L4 | E-mail em branco | Negativo | Sim | Navegador bloqueia o envio (validação HTML5 `valueMissing`) | **Sim** |
@@ -154,6 +169,8 @@ _diversos/out/
 | L7 | Cadastro com e-mail já existente | Negativo | Extra | Recusa com "Email Address already exist!" | **Sim** |
 
 **Resultado da Tarefa 1:** o site atende **100%** do que o PDF pede.
+
+> **Por que Contact Us:** é o formulário mais completo do site (nome, e-mail, assunto, mensagem, anexo). Como a página também abre sem login, o L1 valida "Logged in as <nome>" **na própria página do formulário**, comprovando que a navegação ocorreu com a sessão autenticada. O checkout (único formulário que exige login) fica reservado para a Tarefa 2.
 
 **Tarefa 2 — `checkout.feature`:**
 
@@ -184,17 +201,26 @@ _diversos/out/
 
 **Arquitetura:**
 ```
-Playwright Test (runner) → webdriverio remote() → Appium 2 → UiAutomator2 → App Android
+Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 → App Android
 ```
 
 **Padrões:**
-- Fixture `driver` cria e encerra a sessão Appium; em falha anexa screenshot e page source (XML) via `testInfo.attach`.
-- `globalSetup` sobe/derruba o servidor Appium localmente (na CI pode ser etapa do workflow).
+- Fixture `driver` cria e encerra a sessão Appium; anexa screenshot ao fim de todo teste (evidência) e, em falha, também page source (XML) via `testInfo.attach`.
+- `globalSetup` sobe/derruba o servidor Appium, tanto local quanto na CI (validado no spike).
 - Screen Objects; locators nativos por **accessibility id** e **resource-id** (evitar XPath).
 - Esperas explícitas (`waitForDisplayed`) / `expect.poll` — o auto-wait do Playwright não se aplica a elementos WebdriverIO.
 - `workers: 1` (um emulador).
 
-**App:** Sauce Labs *My Demo App* (React Native, APK Android, baixado no setup).
+**App:** Sauce Labs *My Demo App* v1.3.0 (React Native, APK Android, baixado no setup). **Somente Android.**
+
+| Tarefa do PDF | No app | Validado? |
+|---|---|---|
+| Abrir o app e navegar | Catálogo "Products" → detalhe do produto → carrinho | Catálogo ✅ no spike; demais telas na Fase 3 |
+| Login | Tela de login (`bob@example.com` / `10203040`) | A confirmar na Fase 3 |
+| Validar elemento | Botão "Add to cart", preço, mensagens | A confirmar na Fase 3 |
+| Preencher e enviar formulário | Endereço de entrega no checkout, com validação de obrigatórios | A confirmar na Fase 3 |
+
+**iOS fora do escopo:** o PDF não exige; exigiria runner macOS (cada minuto conta 10× em repo privado), Xcode, simulador e driver XCUITest. Fica no README como melhoria futura — a arquitetura com Appium permite adicioná-lo trocando as capabilities.
 
 **Tarefa 1:** login → catálogo → detalhe do produto → validar elemento (ex.: botão "Add to cart", mensagem).
 - Negativo (extra): login com credenciais inválidas / campos vazios.
@@ -211,35 +237,47 @@ Playwright Test (runner) → webdriverio remote() → Appium 2 → UiAutomator2 
 | Item | Decisão |
 |---|---|
 | Runner | `ubuntu-latest` com **KVM habilitado** (aceleração de hardware para o emulador). macOS não serve: runners Apple Silicon não rodam emulador Android x86 com aceleração |
-| Emulador | `reactivecircus/android-emulator-runner@v2` — API 33, `google_apis`, `x86_64`, `disable-animations: true`, opções `-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect` |
-| Cache do AVD | `actions/cache` do snapshot do AVD → boot cai de ~3–4 min para ~1 min |
-| Appium | Instalado via npm (`appium` + driver `uiautomator2`, versões fixadas) com cache; servidor iniciado pelo `globalSetup` dos testes (evita a pegadinha do `script` do emulator-runner, que executa cada linha em um shell separado) |
-| App | APK do My Demo App baixado por URL de release fixa + cache |
-| Estabilidade | `appium:uiautomator2ServerInstallTimeout`, `appium:adbExecTimeout` e `newCommandTimeout` maiores; `autoGrantPermissions`; `retries: 1` só na CI; timeout do job (~25 min) |
-| Evidências | Upload como artifact de: relatório, screenshots, page source, **log do Appium** e **logcat** (para diagnosticar falhas só da CI) |
-| Custo | Repositório público → minutos ilimitados em runner padrão |
+| Disco | Passo **"Liberar espaço em disco"** antes do emulador (remove .NET, NDK, Haskell, Swift, CodeQL e imagens Docker) — sem isso o emulador aborta por falta de espaço |
+| Emulador | `reactivecircus/android-emulator-runner@v2` — API 33, `google_apis`, `x86_64`, `cores: 4`, `ram-size: 4096M`, `disk-size: 6000M`, `disable-animations: true`, opções `-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -no-metrics` |
+| Cache do AVD | *A fazer:* `actions/cache` do snapshot do AVD para reduzir o boot (~79 s hoje) |
+| Appium | `appium@3.9.0` como devDependency + driver `appium-uiautomator2-driver@8.7.3` instalado por script (`npm run -w mobile driver:install`); servidor iniciado pelo `globalSetup` dos testes (evita a pegadinha do `script` do emulator-runner, que executa cada linha em um shell separado) |
+| App | APK do My Demo App v1.3.0 baixado por URL de release fixa (`npm run -w mobile app:download`); *a fazer:* cache |
+| Estabilidade | `appium:uiautomator2ServerInstallTimeout` e `appium:adbExecTimeout` = 120 s, `newCommandTimeout` = 240 s; `autoGrantPermissions`; `retries: 1` só na CI; `timeout-minutes: 30` |
+| Evidências | Artifact `mobile-report`: relatório HTML, screenshots, page source (XML) e **log do Appium**; *a fazer:* **logcat** |
+| Custo | Repo **privado** no plano Free → 2.000 min/mês; o job mobile consome ~6 min por execução. Ao tornar público, minutos ilimitados |
+
+Workflow validado no spike (`.github/workflows/ci.yml`, job mobile):
 
 ```yaml
 mobile-tests:
   runs-on: ubuntu-latest
-  timeout-minutes: 25
+  timeout-minutes: 30
   steps:
     - uses: actions/checkout@v4
+    - name: Liberar espaço em disco
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup /usr/share/swift /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
     - name: Habilitar KVM
       run: |
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-        sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
     - uses: actions/setup-node@v4
-      with: { node-version-file: .nvmrc, cache: npm }
-    - run: npm ci -w mobile && npx -w mobile appium driver install uiautomator2
-    - run: npm run -w mobile app:download        # baixa o APK (com cache)
+      with: { node-version-file: .nvmrc }
+    - run: npm ci
+    - run: npm run -w mobile driver:install
+    - run: npm run -w mobile app:download
     - uses: reactivecircus/android-emulator-runner@v2
       with:
         api-level: 33
         target: google_apis
         arch: x86_64
+        cores: 4
+        ram-size: 4096M
+        disk-size: 6000M
         disable-animations: true
-        emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+        emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -no-metrics
         script: npm run -w mobile test:ci      # globalSetup sobe o Appium
     - if: always()
       uses: actions/upload-artifact@v4
@@ -248,7 +286,20 @@ mobile-tests:
 
 **Plano B** (se o emulador na CI se mostrar instável): rodar o job contra um device farm (BrowserStack/Sauce Labs, plano trial/open source) apenas trocando as capabilities, ou manter o job com `continue-on-error` e documentar.
 
-**Mitigação de risco:** fazer um **spike** (prova de conceito) do job mobile logo no início — workflow mínimo que sobe emulador + Appium + abre o app e valida um elemento — antes de investir nos cenários.
+**Spike realizado em 03/11/2026 — ✅ APROVADO** (branch `spike/mobile-ci`, [run 41633566054](https://github.com/MarcosJRuiz/out/actions/runs/41633566054)):
+
+| Item | Resultado |
+|---|---|
+| Versões validadas | Node 24 · Appium **3.9.0** · `appium-uiautomator2-driver` **8.7.3** · WebdriverIO 10.1.0 · Playwright Test 1.64.1 · emulador API 33 `google_apis` x86_64 · My Demo App v1.3.0 |
+| Tempo do job | **~6 min** no total (boot do emulador ~79 s; teste 45 s) — sem cache de AVD ainda |
+| Resultado | App abriu no catálogo "Products"; teste passou de primeira (sem retry) |
+| Locators | App expõe **accessibility ids** (`products screen`, `store item`, `store item text`, `store item price`, `open menu`, `cart badge`, `sort button`) → locators nativos sem XPath |
+
+Problemas encontrados e corrigidos no spike:
+1. `appium-uiautomator2-driver@9.x` exige Appium 4 (beta) → fixado em **8.7.3**, última versão compatível com Appium 3.
+2. Emulador abortou com *"Not enough space to create userdata partition"* (3,5 GB livres, precisa de 7,3 GB) → passo **"Liberar espaço em disco"** no workflow + `disk-size: 6000M`, `cores: 4`, `ram-size: 4096M`.
+
+Próximos ajustes no job: cache do AVD e do driver Appium; upload do logcat.
 
 ---
 
@@ -260,30 +311,81 @@ mobile-tests:
 - Relatório HTML via `K6_WEB_DASHBOARD=true` + `K6_WEB_DASHBOARD_EXPORT`.
 - **`ANALISE.md`:** throughput (req/s), latências p90/p95/p99, taxa de erro, comportamento ao longo do tempo, ponto de saturação, gargalos prováveis (ex.: ServeRest usa NeDB em arquivo → contenção em escrita), recomendações.
 - Registrar recursos da máquina/container usados (a análise depende disso).
+- **Execução:** local (`docker compose up` + `k6 run`) e no workflow próprio `.github/workflows/load.yml`, **fora do pipeline por commit** — gatilhos `workflow_dispatch` (manual) e `schedule` (semanal). ServeRest como service container no mesmo runner; relatório HTML e resumo como artifact. Cada execução consome ~7 min de CI.
+- **Implementado na última fase (Fase 6).**
 
 ---
 
 ## 5. CI/CD — GitHub Actions
 
-Gatilhos: `push` e `pull_request` (todas as branches) + `workflow_dispatch`.
+Gatilhos: `push` (todas as branches — atende "após cada commit"), `pull_request` para a `main` e `workflow_dispatch`.
+
+> E2E roda só em **Chromium** a cada commit: o PDF não exige multi-browser e o AutomationExercise já apresenta instabilidade ("queue full"); dobrar o tráfego com Firefox aumentaria o risco de falsos negativos. Multi-browser fica disponível localmente via `BROWSER=`.
 
 ```
-lint ──┬──> api-tests      (ServeRest como service container)
-       ├──> e2e-tests      (matriz: chromium / firefox)
-       └──> mobile-tests   (reactivecircus/android-emulator-runner + Appium)
+lint ──┬──> api-tests          (ServeRest como service container)          [bloqueante]
+       ├──> e2e-tests          (Chromium; --tags "not @known-defect")      [bloqueante]
+       ├──> e2e-known-defects  (--tags "@known-defect")                    [não bloqueante]
+       └──> mobile-tests       (android-emulator-runner + Appium)          [bloqueante]
                     │
-                    └──> publish-reports  (Allure consolidado → GitHub Pages)
+                    └──> publish-reports  (Allure consolidado: artifact single-file; Pages quando público)
 
-load-test: apenas workflow_dispatch / agendado (não roda a cada commit)
+load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamento semanal (não roda a cada commit)
 ```
 
 - Cache de npm e dos browsers do Playwright.
 - Relatórios de cada job como **artifacts** + Allure consolidado com histórico no **GitHub Pages**.
+- ⚠️ GitHub Pages **não está disponível em repo privado no plano Free**. Enquanto o repo for privado, os relatórios ficam só como artifacts; o Pages entra quando o repo for tornado público.
+
+**Estratégia de relatórios (decidida):**
+
+| Relatório | Papel | Origem |
+|---|---|---|
+| **Allure consolidado** | **Principal** — porta de entrada (link no topo do README): visão única de API + E2E + mobile, agrupado por módulo/tag/severidade, `@known-defect` como falhas esperadas, links para os bug reports e histórico/tendência (quando no Pages) | `allure-playwright` (API e mobile) + `allure-cucumberjs` (E2E) → job `publish-reports` junta os `allure-results` |
+| Playwright HTML + Trace Viewer | Complemento — investigação detalhada de falhas de API e mobile | Nativo |
+| Cucumber HTML | Complemento — cenários em Gherkin com screenshots/vídeo | Nativo |
+| K6 Web Dashboard + `ANALISE.md` | Relatório próprio da carga (o Allure não se aplica a métricas de performance) | Nativo |
+
+- Enquanto o repo for privado: Allure gerado como **arquivo HTML único** (`--single-file`), publicado como artifact — abre direto no navegador, sem servidor.
+- Quando o repo for público: Allure publicado no **GitHub Pages** com histórico entre execuções.
 - Job summary (`$GITHUB_STEP_SUMMARY`) com totais por módulo.
 - Badge de status e link dos relatórios no README.
 - Relatório de execuções do pipeline (exigido no item 3): seção no README com prints/links das execuções.
 
-> ⚠️ **Ponto a avaliar:** o job mobile (emulador) é o mais lento e propenso a instabilidade. Proposta: obrigatório no pipeline, com `retries` e timeout ajustados; se ficar instável, documentar.
+### 5.1 Pasta `evidencias/` (decidida)
+
+Atende à observação do PDF **"Salvar evidências do teste (report)"** de forma permanente, sem depender de artifacts (expiram) nem do GitHub Pages (só com repo público).
+
+**Estrutura:**
+```
+evidencias/
+├── README.md                    # índice: data, commit, link da execução da pipeline, resumo (total/passou/falhou por módulo)
+├── allure-report.html           # Allure consolidado (API + E2E + mobile), arquivo único
+├── api/
+│   └── playwright-report.html   # relatório nativo
+├── e2e/
+│   ├── cucumber-report.html     # relatório nativo
+│   └── screenshots/             # evidências dos cenários, incl. negativos e @known-defect
+├── mobile/
+│   ├── playwright-report.html
+│   └── screenshots/
+├── pipeline/
+│   └── execucoes.md             # links e prints das execuções do GitHub Actions (item 3 do PDF)
+└── load/                        # Fase 6
+    ├── k6-dashboard.html
+    └── resumo.json
+```
+
+**Regras:**
+- A pasta é criada na Fase 0 (com o `README.md` de índice) e preenchida na **Fase 5** (escopo obrigatório) e na **Fase 6** (carga).
+- O conteúdo vem dos **artifacts da execução da pipeline do commit final** — rastreável a uma execução real, não a uma rodada local.
+- Script `npm run evidencias:snapshot` baixa os artifacts da execução (`gh run download`) e organiza na estrutura acima.
+- Tamanho controlado: relatórios em HTML único e screenshots; **vídeos e traces ficam só nos artifacts** (pesados), exceto dos cenários `@known-defect`, que entram como prova dos bugs.
+- Não conflita com o `.gitignore`: os relatórios locais (`**/reports/`) continuam ignorados; só `evidencias/` é versionada.
+
+> **Decidido:** API, E2E e mobile rodam **a cada commit** e são **bloqueantes** (falha em qualquer um deixa a pipeline vermelha), conforme o item 3 do PDF. O job mobile tem `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3. Exceção intencional: o job `@known-defect` é não bloqueante, pois contém testes que devem falhar.
+>
+> Enquanto o repo for privado (plano Free), não há proteção de branch: "bloqueante" significa pipeline vermelha, sem impedir merge. Ao tornar o repo público, ativar a regra de checks obrigatórios na `main`.
 
 ---
 
@@ -296,25 +398,29 @@ load-test: apenas workflow_dispatch / agendado (não roda a cada commit)
 - Pré-requisitos e instalação de dependências (incl. Android SDK/emulador para mobile)
 - Como executar cada módulo e gerar cada relatório
 - Decisões técnicas (por que Cucumber puro, Appium + Playwright runner, ServeRest local)
-- Bugs/achados encontrados (ex.: cartão inválido aceito)
+- **Resultados e achados**: interpretação dos resultados de cada módulo, bugs encontrados (link para `docs/bugs/`) e comportamentos relevantes das aplicações testadas
+- Link para as evidências versionadas (`evidencias/`) e para as execuções da pipeline
 - Limitações conhecidas
 
 ---
 
 ## 7. Fases e estimativas
 
-| Fase | Escopo | Estimativa |
-|---|---|---|
-| 0 | Fundação: monorepo (npm workspaces), lint/prettier, `.nvmrc`, `docker-compose` ServeRest, `.gitignore`, esqueleto README | 0,5 dia |
-| 1 | API (Playwright) | 1,5 dia |
-| 2 | E2E (Cucumber + Playwright) | 2 dias |
-| 3 | Mobile (Appium + Playwright runner) | 1,5 dia |
-| 4 | CI/CD (GitHub Actions + Pages) | 1 dia |
-| 5 | Carga (K6) + análise | 0,5 dia |
-| 6 | README final, revisão geral, pipeline limpa | 0,5 dia |
-| | **Total** | **≈ 7,5 dias** |
+| Fase | Escopo | Estimativa | Status |
+|---|---|---|---|
+| — | Exploração do site E2E + spike mobile na CI | — | ✅ Concluído |
+| 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ⏳ |
+| 1 | API (Playwright) | 1,5 dia | ⏳ |
+| 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
+| 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
+| 4 | CI/CD: jobs de API e E2E, lint, caches, job summary (job mobile já existe) | 0,5 dia | ⏳ |
+| 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
+| 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
+| | **Total restante** | **≈ 6,5 dias** | |
 
 Commits seguindo **Conventional Commits**, um conjunto por fase.
+
+> A carga (K6) é a **última fase** por ser opcional no PDF e não fazer parte do pipeline por commit: ao fim da Fase 5 todo o escopo obrigatório (API, E2E, CI + mobile) já está entregue e documentado.
 
 ---
 
@@ -327,6 +433,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | API: GET/POST/PUT/DELETE em múltiplos endpoints | `usuarios`, `produtos`, `carrinhos`, `login` |
 | API: método inválido, payload malformado | `api/` — cenários específicos |
 | API: relatório detalhado | Playwright HTML + Allure |
+| API: interpretar os resultados (objetivo) | Seção "Resultados e achados" no README (ex.: comportamentos do ServeRest como PUT em id inexistente criar registro) |
 | E2E: Cucumber + Playwright | `e2e/` — `@cucumber/cucumber` |
 | E2E: login + navegação + asserções | `login.feature` |
 | E2E: abrir app, login, navegar até formulário (Contact Us) | `login.feature` |
@@ -334,17 +441,18 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | E2E: Page Object | `e2e/pages/` |
 | E2E: checkout (carrinho, pagamento, finalização) | `checkout.feature` |
 | E2E: cartão inválido, endereço incompleto | `checkout.feature` (+ `@known-defect` se aplicável) |
-| E2E: relatório com evidências, incl. falhas esperadas | Cucumber HTML + screenshots/vídeo/trace |
+| E2E: relatório com evidências, incl. falhas esperadas | Cucumber HTML + Allure: screenshot em todos os cenários (negativos incluídos), vídeo/trace em falhas, `@known-defect` com link para `docs/bugs/` |
 | CI: API, E2E e mobile a cada commit | `.github/workflows/ci.yml` |
-| CI: relatório das execuções | Artifacts + GitHub Pages + job summary + seção README |
+| CI: relatório das execuções | Job summary + artifacts + Allure consolidado + seção README com links das execuções |
 | Carga: K6, 500 VUs, 5 min | `load/scripts/carga-500vus.js` |
 | Carga: métricas, gargalos, relatório e análise | K6 dashboard + `ANALISE.md` |
 | Mobile: Appium, login, navegação, validar elemento | `mobile/tests/login.spec.ts` |
 | Mobile: formulário + envio | `mobile/tests/formulario.spec.ts` |
 | Mobile: locators nativos | accessibility id / resource-id |
+| Mobile: configuração do ambiente (critério de avaliação) | README: Android SDK, emulador, Appium/driver, variáveis (`ANDROID_HOME`, `JAVA_HOME`) |
 | Mobile: relatório | Playwright HTML + Allure |
-| Projeto no GitHub/GitLab | GitHub |
-| Evidências salvas | `reports/` por módulo + artifacts + Pages |
+| Projeto no GitHub/GitLab | GitHub — `MarcosJRuiz/out` (**precisa estar acessível ao avaliador na entrega**) |
+| Evidências salvas | **`evidencias/` versionada** (seção 5.1) + artifacts por execução + Pages quando público |
 | README completo | Seção 6 |
 
 ---
@@ -358,7 +466,9 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | AutomationExercise com anúncios/pop-ups | Flakiness | Bloquear domínios de ads via `page.route` |
 | Cartão inválido e endereço incompleto aceitos pelo site (**confirmado**) | Cenários negativos falham | `@known-defect` + bug report + job não bloqueante |
 | Site retorna "under heavy load (queue full)" intermitentemente (**confirmado**) | Flakiness | Retry com backoff na navegação, `workers` baixo, `retry` na CI |
-| Emulador Android lento/instável na CI | Pipeline vermelho | KVM no runner, snapshot de AVD em cache, animações desligadas, retries, timeouts, logcat/log do Appium como evidência; **spike no início**; plano B: device farm |
+| Emulador Android lento/instável na CI (**spike aprovado**, ver 4.3) | Pipeline vermelho | KVM, disco liberado, animações desligadas, retries, timeouts, log do Appium/logcat como evidência; plano B: device farm |
+| Repo privado: minutos de CI limitados e sem GitHub Pages | Consumo da cota (~15 min por push com API + E2E + mobile → ~130 pushes/mês) | Todos os jobs rodam a cada commit (exigência do PDF); acompanhar o consumo; publicar Pages ao tornar o repo público |
+| Versões novas incompatíveis (ex.: driver UiAutomator2 9.x exige Appium 4) | Quebra na instalação | Todas as versões fixadas (`package.json`, `package-lock.json`, scripts) |
 | 500 VUs saturando a máquina geradora (não a API) | Análise distorcida | Monitorar CPU do gerador; documentar recursos; rodar local/manual |
 | Divergência de comportamento do ServeRest (status de método inválido, PUT em id inexistente) | Asserções erradas | Validar na Fase 1 e documentar o comportamento real |
 
@@ -366,15 +476,29 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 
 ## 10. Pontos para avaliarmos / decidir
 
-- [ ] Stack da seção 2 aprovada?
-- [ ] Versionar ou não o PDF da avaliação no repositório? (sugestão: não)
-- [ ] GitHub como plataforma (vs GitLab)?
-- [ ] Nome do repositório (sugestão: `outsera-qa-automation`)?
+**Decididos:**
+- [x] Linguagem: TypeScript; foco em Playwright
+- [x] Cucumber puro (`@cucumber/cucumber`) no E2E
+- [x] Mobile: Appium com Playwright Test como runner (Cypress e Playwright mobile web descartados)
+- [x] App mobile: Sauce Labs My Demo App v1.3.0, **somente Android**; iOS fora do escopo (citado no README como melhoria futura)
 - [x] Site alvo do E2E: AutomationExercise para todos os cenários
-- [ ] Formulário de destino da navegação no login: Contact Us — ok?
-- [ ] Estratégia `@known-defect` (cenário esperando o correto + job não bloqueante) para cartão inválido e endereço incompleto — ok?
-- [ ] App mobile: Sauce Labs My Demo App (Android) — ok? iOS fora do escopo?
-- [ ] Job mobile obrigatório na pipeline mesmo com risco de instabilidade?
-- [ ] Load test fora do pipeline por commit (apenas manual/agendado)?
-- [ ] Allure consolidado como relatório principal + relatórios nativos como complemento?
-- [ ] Ordem das fases (mobile antes da CI para a pipeline já nascer completa)?
+- [x] Destino da navegação na Tarefa 1 do E2E: formulário **Contact Us**, validando também que a sessão continua ativa ("Logged in as <nome>")
+- [x] Plataforma: GitHub — repositório `MarcosJRuiz/out` (nome mantido)
+- [x] Repo **privado** durante o desenvolvimento
+- [x] PDF da avaliação não versionado; histórico limpo
+- [x] Job mobile viável na CI (spike aprovado)
+- [x] Estratégia `@known-defect` para cartão inválido (C5) e endereço incompleto (C6): cenário esperando o comportamento correto + bug report + job não bloqueante
+- [x] Fluxo de branches: spike integrado à `main` via PR; cada fase em branch própria (`feat/fase-N-...`) com PR para a `main`
+- [x] Job mobile **bloqueante** e executado **a cada commit** junto com API e E2E, conforme o PDF (item 3)
+- [x] Load test **fora do pipeline por commit**: workflow próprio, só manual (`workflow_dispatch`) e agendado; implementado na **última fase**
+- [x] Evidências versionadas na pasta **`evidencias/`** do repositório (artifacts do Actions expiram e o Pages só existe com repo público) — ver seção 5.1
+- [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
+
+**Pendentes (decisão):**
+- [ ] Acesso do avaliador na entrega: tornar o repo **público** (sugestão, no fim da Fase 6) ou manter privado e **convidar o avaliador** como colaborador? *Obrigatório resolver antes da entrega — o PDF exige o projeto publicado.*
+
+**Pendentes (validação técnica, durante as fases):**
+- [ ] Fase 1 — ServeRest: status retornado para método inválido (405/404) e comportamento de PUT com id inexistente
+- [ ] Fase 2 — AutomationExercise: confirmar mensagens e fluxos ao automatizar (exploração já feita)
+- [ ] Fase 3 — My Demo App: confirmar tela de login, credenciais, formulário de endereço e mensagens de validação
+- [ ] Fase 6 — K6: calibrar thresholds após a primeira execução
