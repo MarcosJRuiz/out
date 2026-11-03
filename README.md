@@ -112,7 +112,7 @@ Cucumber (Gherkin em português) com Playwright como biblioteca, contra o [Autom
 
 - **Massa:** cada cenário cria a própria conta pela API do site e a exclui ao final.
 - **Estabilidade:** bloqueio de anúncios, espera pela resposta do "add to cart" e nova tentativa automática quando o site responde "under heavy load". Retry de 1 vez na CI (exceto `@known-defect`).
-- **Evidências:** screenshot de **todo** cenário (inclusive negativos aprovados); vídeo e trace do Playwright nas falhas.
+- **Evidências:** screenshot após **cada validação** (passos "Então"/"E" de resultado, inclusive nos cenários negativos aprovados) e no passo que falhar, com o nome do passo; vídeo e trace do Playwright nas falhas. Ex.: o C1 registra o carrinho conferido, o endereço conferido e o pedido confirmado.
 - **Relatórios:** `e2e/reports/cucumber-report.html` (suíte principal), `e2e/reports/known-defects/cucumber-report.html` (defeitos) e resultados Allure em `e2e/reports/allure-results`.
 
 ### Defeitos encontrados

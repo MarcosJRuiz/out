@@ -212,6 +212,7 @@ _diversos/out/
 **Resultado da Fase 2:**
 - Gherkin em português (`# language: pt`); 7 cenários de login (L1–L7) e 6 de checkout (C1–C6).
 - Suíte principal: **11/11 aprovados em 3 execuções seguidas** (~36–45 s, 2 cenários em paralelo).
+- Evidência por validação: `AfterStep` tira screenshot após cada passo de resultado ("Então"/"E") e após qualquer passo que falhe, nomeado com o texto do passo (ex.: C1 → carrinho, endereço e confirmação). Vídeo e trace continuam só nas falhas.
 - `@known-defect`: C5 e C6 falham com mensagens claras (C5: foi para `/payment_done/<id>`; C6: chegou a `/payment`), com screenshot, vídeo, trace e link para `docs/bugs/BUG-001` e `BUG-002`.
 - CI: job `e2e-tests` (bloqueante) e `e2e-known-defects` (o passo de testes usa `continue-on-error`; o resumo registra os bugs reproduzidos e emite aviso se os cenários passarem — sinal de que o bug foi corrigido).
 - Requisito de ambiente: **Node 24** (o Cucumber 13 recusa o Node 25); instalado via `nvm install` a partir do `.nvmrc`.

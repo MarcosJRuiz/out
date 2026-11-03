@@ -1,4 +1,5 @@
-import { After, AfterAll, Before, BeforeAll, Status } from '@cucumber/cucumber';
+import { After, AfterAll, AfterStep, Before, BeforeAll, Status } from '@cucumber/cucumber';
+import { PickleStepType } from '@cucumber/messages';
 import { chromium, firefox, webkit, type Browser } from '@playwright/test';
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
@@ -34,13 +35,21 @@ Before(async function (this: E2EWorld, { pickle }) {
   this.page = await this.context.newPage();
 });
 
+// Evidência de cada validação: screenshot após todo passo "Então"/"E" de resultado (inclusive nos
+// cenários negativos aprovados) e após qualquer passo que falhe, mostrando o estado no momento da falha.
+AfterStep(async function (this: E2EWorld, { pickleStep, result }) {
+  const validacao = pickleStep.type === PickleStepType.OUTCOME;
+  const falhou = result.status === Status.FAILED;
+  if (!this.page || this.page.isClosed() || (!validacao && !falhou)) return;
+
+  this.attach(await this.page.screenshot({ fullPage: true }), {
+    mediaType: 'image/png',
+    fileName: `${falhou ? 'FALHA - ' : ''}${pickleStep.text}.png`,
+  });
+});
+
 After(async function (this: E2EWorld, { pickle, result }) {
   const falhou = result?.status === Status.FAILED;
-
-  // Evidência de todo cenário (inclusive negativos aprovados): screenshot do estado final.
-  if (this.page) {
-    this.attach(await this.page.screenshot({ fullPage: true }), 'image/png');
-  }
 
   for (const tag of pickle.tags.map((t) => t.name)) {
     if (BUGS[tag]) this.attach(`Defeito conhecido ${tag.slice(1)}: ${BUGS[tag]}`, 'text/plain');
