@@ -7,9 +7,6 @@ export default defineConfig({
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
   timeout: 180_000,
-  reporter: [
-    ['list'],
-    ['html', { outputFolder: 'reports/html', open: 'never' }],
-  ],
+  reporter: [['list'], ['html', { outputFolder: 'reports/html', open: 'never' }]],
   outputDir: 'reports/test-results',
 });
