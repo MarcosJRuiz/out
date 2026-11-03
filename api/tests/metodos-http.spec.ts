@@ -21,11 +21,22 @@ test.describe('métodos HTTP não suportados', { tag: '@negative' }, () => {
   }
 });
 
+// Todos os métodos que recebem corpo. O ServeRest valida o JSON antes da autenticação,
+// por isso as rotas protegidas não precisam de token e os ids não precisam existir.
+const ROTAS_COM_CORPO = [
+  { metodo: 'POST', rota: '/login' },
+  { metodo: 'POST', rota: '/usuarios' },
+  { metodo: 'POST', rota: '/produtos' },
+  { metodo: 'POST', rota: '/carrinhos' },
+  { metodo: 'PUT', rota: '/usuarios/0000000000000000' },
+  { metodo: 'PUT', rota: '/produtos/0000000000000000' },
+];
+
 test.describe('payload malformado', { tag: '@negative' }, () => {
-  for (const rota of ['/login', '/usuarios']) {
-    test(`POST ${rota} recusa JSON malformado`, async ({ usuariosApi }) => {
+  for (const { metodo, rota } of ROTAS_COM_CORPO) {
+    test(`${metodo} ${rota} recusa JSON malformado`, async ({ usuariosApi }) => {
       const corpo = await validarResposta(
-        await usuariosApi.corpoCru('POST', rota, '{"email": '),
+        await usuariosApi.corpoCru(metodo, rota, '{"nome": '),
         400,
         mensagemSchema,
         { headersPadrao: false },

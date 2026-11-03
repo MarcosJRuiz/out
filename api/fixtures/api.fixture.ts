@@ -16,15 +16,14 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
+  // Evidência de todo teste (aprovado ou não): requisições enviadas e respostas recebidas.
   httpLog: async ({}, use, testInfo) => {
     const log = new HttpLog();
     await use(log);
-    if (testInfo.status !== testInfo.expectedStatus) {
-      await testInfo.attach('requisicoes-http.json', {
-        body: JSON.stringify(log.trocas, null, 2),
-        contentType: 'application/json',
-      });
-    }
+    await testInfo.attach('requisicoes-http.json', {
+      body: JSON.stringify(log.trocas, null, 2),
+      contentType: 'application/json',
+    });
   },
   loginApi: async ({ request, httpLog }, use) => use(new LoginClient(request, httpLog)),
   usuariosApi: async ({ request, httpLog }, use) => use(new UsuariosClient(request, httpLog)),
