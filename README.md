@@ -65,20 +65,20 @@ npm run test:mobile
 
 ## Testes de API
 
-Playwright Test (`APIRequestContext`) contra o [ServeRest](https://serverest.dev) local. 57 testes em 5 arquivos:
+Playwright Test (`APIRequestContext`) contra o [ServeRest](https://serverest.dev) local. 60 testes em 5 arquivos:
 
-| Arquivo                | Escopo                                                  | Testes |
-| ---------------------- | ------------------------------------------------------- | ------ |
-| `login.spec.ts`        | `POST /login`                                           | 7      |
-| `usuarios.spec.ts`     | `GET/POST/PUT/DELETE /usuarios`                         | 16     |
-| `produtos.spec.ts`     | `GET/POST/PUT/DELETE /produtos` (autenticação e perfil) | 17     |
-| `carrinhos.spec.ts`    | `/carrinhos`, concluir e cancelar compra, estoque       | 9      |
-| `metodos-http.spec.ts` | Métodos não suportados (405) e JSON malformado          | 8      |
+| Arquivo                | Escopo                                                                       | Testes |
+| ---------------------- | ---------------------------------------------------------------------------- | ------ |
+| `login.spec.ts`        | `POST /login`                                                                | 7      |
+| `usuarios.spec.ts`     | `GET/POST/PUT/DELETE /usuarios`                                              | 15     |
+| `produtos.spec.ts`     | `GET/POST/PUT/DELETE /produtos` (autenticação e perfil)                      | 17     |
+| `carrinhos.spec.ts`    | `/carrinhos`, concluir e cancelar compra, estoque                            | 9      |
+| `metodos-http.spec.ts` | Métodos não suportados (405) e JSON malformado em todos os métodos com corpo | 12     |
 
 - Toda resposta é validada em **status code, headers e corpo** (`support/assertions.ts`), com o contrato do corpo verificado por schemas Zod (`schemas/`).
 - Cada teste cria e remove a própria massa pela API (`fixtures/massa.ts`), então os testes são independentes e rodam em paralelo.
-- Tags: `@smoke`, `@negative` (37 testes) e `@contract`. Ex.: `npx playwright test --grep @negative` dentro de `api/`.
-- Em falhas, as requisições e respostas do teste são anexadas ao relatório (`requisicoes-http.json`).
+- Tags: `@smoke`, `@negative` (40 testes) e `@contract`. Ex.: `npx playwright test --grep @negative` dentro de `api/`.
+- **Evidência em todo teste:** as requisições e respostas (status, headers e corpo) de cada teste são anexadas ao relatório em `requisicoes-http.json`, inclusive nos testes aprovados.
 - Relatórios: HTML em `api/reports/html` e resultados Allure em `api/reports/allure-results`.
 
 ### Achados
