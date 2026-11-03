@@ -45,7 +45,10 @@ console.log(`Execução ${idExecucao} (${execucao.conclusion}) — commit ${exec
 // Relatório consolidado e resumo publicados pelo job publish-reports.
 const temporario = mkdtempSync(path.join(tmpdir(), 'evidencias-'));
 gh('run', 'download', String(idExecucao), '--name', 'relatorio-consolidado', '--dir', temporario);
-rmSync(DESTINO, { recursive: true, force: true });
+// Substitui só os arquivos gerados por este script; evidencias/load/ (teste de carga) é mantida.
+for (const gerado of ['README.md', 'allure-report.html', 'pipeline']) {
+  rmSync(path.join(DESTINO, gerado), { recursive: true, force: true });
+}
 mkdirSync(path.join(DESTINO, 'pipeline'), { recursive: true });
 copyFileSync(path.join(temporario, 'allure-report', 'index.html'), path.join(DESTINO, 'allure-report.html'));
 const resumo = readFileSync(path.join(temporario, 'resumo.md'), 'utf8').replace(
@@ -123,6 +126,7 @@ ${resumo}
 | [\`allure-report.html\`](allure-report.html) | **Relatório consolidado** (API + E2E + mobile) em arquivo único: baixe e abra no navegador. Agrupado por módulo, com passos, screenshots, requisições HTTP de cada teste de API e os vídeos dos defeitos conhecidos (aba *Categories* → "Defeitos conhecidos do site") |
 | [\`pipeline/execucoes.md\`](pipeline/execucoes.md) | Jobs da execução de referência e histórico recente da pipeline na \`main\` |
 | [\`../docs/bugs/\`](../docs/bugs/) | Bug reports dos defeitos encontrados (BUG-001 e BUG-002) |
+| [\`load/\`](load/) | Teste de carga (k6): dashboard e resumo do cenário oficial (500 usuários, 5 min, na CI) e do teste de estresse — análise em [\`load/ANALISE.md\`](../load/ANALISE.md) |
 
 Os relatórios nativos de cada módulo (Playwright HTML, Cucumber HTML com vídeos, traces do Playwright e log do Appium) ficam nos artifacts da execução: \`api-report\`, \`e2e-report\`, \`e2e-known-defects-report\` e \`mobile-report\`.
 
