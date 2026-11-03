@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "app:download": "mkdir -p apps && test -f apps/my-demo-app.apk || curl -fsSL -o apps/my-demo-app.apk https://github.com/saucelabs/my-demo-app-rn/releases/download/v1.3.0/Android-MyDemoAppRN.1.3.0.build-244.apk",
-    "driver:install": "appium driver install --source=npm appium-uiautomator2-driver@9.0.1",
+    "driver:install": "appium driver install --source=npm appium-uiautomator2-driver@8.7.3",
     "test": "playwright test",
     "test:ci": "playwright test"
   },
