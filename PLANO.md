@@ -297,6 +297,8 @@ Próximos ajustes no job: cache do AVD e do driver Appium; upload do logcat.
 - Relatório HTML via `K6_WEB_DASHBOARD=true` + `K6_WEB_DASHBOARD_EXPORT`.
 - **`ANALISE.md`:** throughput (req/s), latências p90/p95/p99, taxa de erro, comportamento ao longo do tempo, ponto de saturação, gargalos prováveis (ex.: ServeRest usa NeDB em arquivo → contenção em escrita), recomendações.
 - Registrar recursos da máquina/container usados (a análise depende disso).
+- **Execução:** local (`docker compose up` + `k6 run`) e no workflow próprio `.github/workflows/load.yml`, **fora do pipeline por commit** — gatilhos `workflow_dispatch` (manual) e `schedule` (semanal). ServeRest como service container no mesmo runner; relatório HTML e resumo como artifact. Cada execução consome ~7 min de CI.
+- **Implementado na última fase (Fase 6).**
 
 ---
 
@@ -311,7 +313,7 @@ lint ──┬──> api-tests      (ServeRest como service container)
                     │
                     └──> publish-reports  (Allure consolidado → GitHub Pages)
 
-load-test: apenas workflow_dispatch / agendado (não roda a cada commit)
+load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamento semanal (não roda a cada commit)
 ```
 
 - Cache de npm e dos browsers do Playwright.
@@ -361,11 +363,13 @@ load-test: apenas workflow_dispatch / agendado (não roda a cada commit)
 | 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
 | 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
 | 4 | CI/CD: jobs de API e E2E, lint, caches, job summary (job mobile já existe) | 0,5 dia | ⏳ |
-| 5 | Carga (K6) + análise | 0,5 dia | ⏳ |
-| 6 | README final, revisão geral, pipeline limpa, tornar o repo público | 0,5 dia | ⏳ |
+| 5 | README final, revisão geral, pipeline limpa → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
+| 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README; tornar o repo público | 0,5 dia | ⏳ |
 | | **Total restante** | **≈ 6,5 dias** | |
 
 Commits seguindo **Conventional Commits**, um conjunto por fase.
+
+> A carga (K6) é a **última fase** por ser opcional no PDF e não fazer parte do pipeline por commit: ao fim da Fase 5 todo o escopo obrigatório (API, E2E, CI + mobile) já está entregue e documentado.
 
 ---
 
@@ -428,6 +432,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Repo **privado** durante o desenvolvimento
 - [x] PDF da avaliação não versionado; histórico limpo
 - [x] Job mobile viável na CI (spike aprovado)
+- [x] Load test **fora do pipeline por commit**: workflow próprio, só manual (`workflow_dispatch`) e agendado; implementado na **última fase**
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
 
 **Pendentes:**
@@ -435,6 +440,5 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [ ] Estratégia `@known-defect` (cenário esperando o correto + job não bloqueante) para cartão inválido e endereço incompleto — ok?
 - [ ] App mobile: Sauce Labs My Demo App (Android) — ok? iOS fora do escopo?
 - [ ] Job mobile obrigatório (bloqueante) na pipeline?
-- [ ] Load test fora do pipeline por commit (apenas manual/agendado)?
 - [ ] Branch do spike: abrir PR `spike/mobile-ci` → `main` e seguir a partir dele, ou começar a Fase 0 na `main`?
-- [ ] Quando tornar o repo público (sugestão: na Fase 6, antes da entrega)?
+- [ ] Quando tornar o repo público (sugestão: no fim da Fase 6, antes da entrega)?
