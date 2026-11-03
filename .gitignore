@@ -1,0 +1,19 @@
+# Material da avaliação (não versionar)
+*.pdf
+
+# Dependências
+node_modules/
+
+# Relatórios e evidências geradas
+**/reports/
+**/allure-results/
+**/allure-report/
+**/test-results/
+**/playwright-report/
+
+# App mobile baixado no setup
+mobile/apps/*.apk
+
+# Ambiente
+.env
+.DS_Store
