@@ -14,6 +14,8 @@ Projeto de automação de testes de API, E2E, mobile e carga, com execução con
 ├── load/                 # Testes de carga — K6 (em construção)
 ├── docs/bugs/            # Bug reports dos defeitos encontrados
 ├── evidencias/           # Snapshot versionado dos relatórios
+├── scripts/              # Consolidação dos relatórios (Allure e resumo da pipeline)
+├── allurerc.mjs          # Configuração do relatório Allure consolidado
 ├── docker-compose.yml    # ServeRest local
 └── .github/workflows/    # Pipeline de CI
 ```
@@ -30,6 +32,7 @@ Projeto de automação de testes de API, E2E, mobile e carga, com execução con
 | Zod (contratos)              | 4.6.7            |
 | Faker                        | 10.6.0           |
 | Allure Playwright            | 3.14.0           |
+| Allure Report (CLI)          | 3.22.1           |
 | WebdriverIO                  | 10.1.0           |
 | Appium                       | 3.9.0            |
 | Driver UiAutomator2          | 8.7.3            |
@@ -152,6 +155,33 @@ npm run lint          # ESLint
 npm run format:check  # Prettier
 npm run typecheck     # TypeScript
 ```
+
+## Pipeline de CI (GitHub Actions)
+
+Arquivo: `.github/workflows/ci.yml`. Roda **a cada push** em qualquer branch (e manualmente pela aba Actions).
+
+```
+lint ──┬─> api-tests            ServeRest como container de serviço        bloqueante
+       ├─> e2e-tests            Cucumber + Playwright (Chromium)            bloqueante
+       ├─> e2e-known-defects    cenários @known-defect (BUG-001, BUG-002)   não bloqueante
+       └─> mobile-tests         emulador Android + Appium                   bloqueante
+                  │
+                  └─> publish-reports   Allure consolidado + resumo da execução
+```
+
+| Job                 | O que faz                                                                                                                            | Artifact                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| `lint`              | ESLint, Prettier e TypeScript                                                                                                        | —                          |
+| `api-tests`         | 60 testes de API contra o ServeRest                                                                                                  | `api-report`               |
+| `e2e-tests`         | 11 cenários E2E (suíte principal)                                                                                                    | `e2e-report`               |
+| `e2e-known-defects` | 2 cenários que reproduzem defeitos do site; a falha é esperada e registrada no resumo; se passarem, emite aviso de possível correção | `e2e-known-defects-report` |
+| `mobile-tests`      | 7 testes mobile no emulador Android (API 33)                                                                                         | `mobile-report`            |
+| `publish-reports`   | Junta os resultados Allure dos módulos, gera o **relatório consolidado** e escreve o **resumo** na página da execução                | `relatorio-consolidado`    |
+
+- **Resumo da execução:** tabela com testes, aprovados, falhas, falhas esperadas e testes que passaram após retry, por módulo.
+- **Relatório consolidado:** Allure em **arquivo HTML único** (abre direto no navegador), agrupado por módulo (API, E2E, Mobile), com a categoria "Defeitos conhecidos do site (falha esperada)" e link de cada cenário para o bug report.
+- **Gerar o relatório consolidado localmente** (depois de rodar os testes): `npm run relatorio` → `reports/allure-report/index.html`.
+- **Otimizações:** cache do npm; `concurrency` cancela a execução anterior em novo push no mesmo branch; imagem do Android baixada com novas tentativas.
 
 ## Relatórios e evidências
 

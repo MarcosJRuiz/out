@@ -19,7 +19,8 @@
 | Otimização da CI | ✅ Integrada (PR #5): cache do emulador testado e descartado; **job mobile desativado até a Fase 3** (seção 5) |
 | Fase 2 — E2E | ✅ Concluída (branch `feat/fase-2-e2e`): 11 cenários aprovados (3 execuções seguidas) + 2 `@known-defect` falhando como esperado |
 | Fase 3 — Mobile | ✅ Concluída (branch `feat/fase-3-mobile`): 7 testes aprovados na CI sem retry; job mobile reativado em todo push |
-| Fases 4 a 6 | ⏳ Não iniciadas |
+| Fase 4 — CI/CD | ✅ Concluída (branch `feat/fase-4-ci`): job `publish-reports` com Allure consolidado e resumo da execução |
+| Fases 5 e 6 | ⏳ Não iniciadas |
 
 ---
 
@@ -402,6 +403,12 @@ load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamen
 - Relatórios de cada job como **artifacts** + Allure consolidado com histórico no **GitHub Pages**.
 - ⚠️ GitHub Pages **não está disponível em repo privado no plano Free**. Enquanto o repo for privado, os relatórios ficam só como artifacts; o Pages entra quando o repo for tornado público.
 
+**Implementação (Fase 4):**
+- `scripts/relatorio-consolidado.mjs`: junta os `allure-results` dos artifacts, marca o módulo de cada teste (`parentSuite` = API, E2E ou Mobile), liga os cenários `@BUG-00x` aos bug reports (link do tipo *issue*) e gera `reports/resumo.md` (totais por módulo, considerando só o último resultado de cada teste com retry).
+- `allurerc.mjs`: Allure 3 (Node, sem Java) com `singleFile: true` e categorias — "Defeitos conhecidos do site (falha esperada)" (tag `known-defect`), "Falhas de produto" (`failed`) e "Falhas de teste" (`broken`).
+- Job `publish-reports` (`if: always()`): baixa os 4 artifacts, consolida, gera o Allure, escreve o resumo e publica o artifact `relatorio-consolidado`.
+- Validado localmente com resultados reais dos 3 módulos: 80 testes, 78 aprovados, 2 falhas esperadas, 0 falhas inesperadas.
+
 **Estratégia de relatórios (decidida):**
 
 | Relatório | Papel | Origem |
@@ -480,7 +487,7 @@ evidencias/
 | 1 | API (Playwright) + job `api-tests` na CI (antecipado da Fase 4) | 1,5 dia | ✅ |
 | 2 | E2E (Cucumber + Playwright) + jobs `e2e-tests` e `e2e-known-defects` na CI (antecipados da Fase 4) | 2 dias | ✅ |
 | 3 | Mobile (Appium + Playwright runner) + job `mobile-tests` reativado em todo push (sem a condição de branch) | 1 dia | ✅ |
-| 4 | CI/CD: job E2E, job `@known-defect`, Allure consolidado, job summary (lint, cache do npm e job de API já antecipados) | 0,5 dia | ⏳ |
+| 4 | CI/CD: job `publish-reports` (Allure 3 consolidado em HTML único + resumo no `$GITHUB_STEP_SUMMARY`), documentação da pipeline no README (demais jobs antecipados nas Fases 0–3) | 0,5 dia | ✅ |
 | 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
 | 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
 | | **Total restante** | **≈ 6,5 dias** | |

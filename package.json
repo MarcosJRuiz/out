@@ -19,11 +19,13 @@
     "serverest:down": "docker compose down",
     "test:mobile": "npm run test -w mobile",
     "test:api": "npm run test -w api",
-    "test:e2e": "npm run test -w e2e"
+    "test:e2e": "npm run test -w e2e",
+    "relatorio": "node scripts/relatorio-consolidado.mjs API=api/reports/allure-results E2E=e2e/reports/allure-results Mobile=mobile/reports/allure-results && allure generate reports/allure-results"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "24.19.2",
+    "allure": "3.22.1",
     "eslint": "10.14.0",
     "eslint-config-prettier": "10.1.8",
     "globals": "17.14.0",
