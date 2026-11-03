@@ -76,9 +76,10 @@ _diversos/out/
 │   ├── cucumber.js
 │   └── package.json
 ├── mobile/
-│   ├── tests/                 # login.spec.ts, formulario.spec.ts
+│   ├── tests/                 # login.spec.ts, formulario.spec.ts (spike.spec.ts é removido na Fase 3)
 │   ├── screens/               # Screen Objects
 │   ├── fixtures/              # driver.fixture.ts (WebdriverIO remote)
+│   ├── support/               # global-setup.ts (sobe/derruba o Appium)
 │   ├── apps/                  # APK baixado no setup (gitignored)
 │   ├── playwright.config.ts
 │   └── package.json
@@ -86,7 +87,9 @@ _diversos/out/
 │   ├── scripts/carga-500vus.js
 │   ├── reports/
 │   └── ANALISE.md
-├── .github/workflows/ci.yml
+├── .github/workflows/         # ci.yml (por commit) e load.yml (manual/agendado)
+├── docs/bugs/                 # bug reports (BUG-001 cartão inválido, BUG-002 endereço incompleto)
+├── evidencias/                # snapshot final dos relatórios versionado na entrega
 ├── docker-compose.yml         # ServeRest
 ├── package.json               # npm workspaces + scripts agregados
 ├── .gitignore  .editorconfig  .nvmrc  eslint/prettier
@@ -133,9 +136,9 @@ _diversos/out/
 
 **Padrões:**
 - World customizado guardando `browser`, `context`, `page` e Page Objects.
-- Hooks: `Before` cria contexto isolado; `After` anexa **screenshot**, **vídeo** e **trace** (`context.tracing`) ao relatório quando falha.
+- Hooks: `Before` cria contexto isolado; `After` anexa **screenshot** ao relatório em **todos os cenários** (inclusive negativos que passam, como evidência da mensagem de erro) e, quando falha, também **vídeo** e **trace** (`context.tracing`).
 - Asserções com `expect` do `@playwright/test` (auto-wait), sem `waitForTimeout`.
-- Seletores estáveis (`data-test`, roles, labels).
+- Seletores estáveis: atributos `data-qa` do site (validados na exploração), roles e labels.
 - `Scenario Outline` + `Examples` para os negativos.
 - Tags: `@smoke`, `@login`, `@checkout`, `@negative`, `@known-defect`.
 - Execução multi-browser via variável (`BROWSER=chromium|firefox|webkit`).
@@ -202,8 +205,8 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 ```
 
 **Padrões:**
-- Fixture `driver` cria e encerra a sessão Appium; em falha anexa screenshot e page source (XML) via `testInfo.attach`.
-- `globalSetup` sobe/derruba o servidor Appium localmente (na CI pode ser etapa do workflow).
+- Fixture `driver` cria e encerra a sessão Appium; anexa screenshot ao fim de todo teste (evidência) e, em falha, também page source (XML) via `testInfo.attach`.
+- `globalSetup` sobe/derruba o servidor Appium, tanto local quanto na CI (validado no spike).
 - Screen Objects; locators nativos por **accessibility id** e **resource-id** (evitar XPath).
 - Esperas explícitas (`waitForDisplayed`) / `expect.poll` — o auto-wait do Playwright não se aplica a elementos WebdriverIO.
 - `workers: 1` (um emulador).
@@ -315,14 +318,17 @@ Próximos ajustes no job: cache do AVD e do driver Appium; upload do logcat.
 
 ## 5. CI/CD — GitHub Actions
 
-Gatilhos: `push` e `pull_request` (todas as branches) + `workflow_dispatch`.
+Gatilhos: `push` (todas as branches — atende "após cada commit"), `pull_request` para a `main` e `workflow_dispatch`.
+
+> E2E roda só em **Chromium** a cada commit: o PDF não exige multi-browser e o AutomationExercise já apresenta instabilidade ("queue full"); dobrar o tráfego com Firefox aumentaria o risco de falsos negativos. Multi-browser fica disponível localmente via `BROWSER=`.
 
 ```
-lint ──┬──> api-tests      (ServeRest como service container)
-       ├──> e2e-tests      (matriz: chromium / firefox)
-       └──> mobile-tests   (reactivecircus/android-emulator-runner + Appium)
+lint ──┬──> api-tests          (ServeRest como service container)          [bloqueante]
+       ├──> e2e-tests          (Chromium; --tags "not @known-defect")      [bloqueante]
+       ├──> e2e-known-defects  (--tags "@known-defect")                    [não bloqueante]
+       └──> mobile-tests       (android-emulator-runner + Appium)          [bloqueante]
                     │
-                    └──> publish-reports  (Allure consolidado → GitHub Pages)
+                    └──> publish-reports  (Allure consolidado: artifact single-file; Pages quando público)
 
 load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamento semanal (não roda a cada commit)
 ```
@@ -361,7 +367,8 @@ load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamen
 - Pré-requisitos e instalação de dependências (incl. Android SDK/emulador para mobile)
 - Como executar cada módulo e gerar cada relatório
 - Decisões técnicas (por que Cucumber puro, Appium + Playwright runner, ServeRest local)
-- Bugs/achados encontrados (ex.: cartão inválido aceito)
+- **Resultados e achados**: interpretação dos resultados de cada módulo, bugs encontrados (link para `docs/bugs/`) e comportamentos relevantes das aplicações testadas
+- Link para as evidências versionadas (`evidencias/`) e para as execuções da pipeline
 - Limitações conhecidas
 
 ---
@@ -376,8 +383,8 @@ load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamen
 | 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
 | 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
 | 4 | CI/CD: jobs de API e E2E, lint, caches, job summary (job mobile já existe) | 0,5 dia | ⏳ |
-| 5 | README final, revisão geral, pipeline limpa → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
-| 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README; tornar o repo público | 0,5 dia | ⏳ |
+| 5 | README final, bug reports, snapshot de relatórios em `evidencias/`, revisão geral, pipeline limpa → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
+| 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README; liberar acesso ao avaliador | 0,5 dia | ⏳ |
 | | **Total restante** | **≈ 6,5 dias** | |
 
 Commits seguindo **Conventional Commits**, um conjunto por fase.
@@ -395,6 +402,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | API: GET/POST/PUT/DELETE em múltiplos endpoints | `usuarios`, `produtos`, `carrinhos`, `login` |
 | API: método inválido, payload malformado | `api/` — cenários específicos |
 | API: relatório detalhado | Playwright HTML + Allure |
+| API: interpretar os resultados (objetivo) | Seção "Resultados e achados" no README (ex.: comportamentos do ServeRest como PUT em id inexistente criar registro) |
 | E2E: Cucumber + Playwright | `e2e/` — `@cucumber/cucumber` |
 | E2E: login + navegação + asserções | `login.feature` |
 | E2E: abrir app, login, navegar até formulário (Contact Us) | `login.feature` |
@@ -402,17 +410,18 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | E2E: Page Object | `e2e/pages/` |
 | E2E: checkout (carrinho, pagamento, finalização) | `checkout.feature` |
 | E2E: cartão inválido, endereço incompleto | `checkout.feature` (+ `@known-defect` se aplicável) |
-| E2E: relatório com evidências, incl. falhas esperadas | Cucumber HTML + screenshots/vídeo/trace |
+| E2E: relatório com evidências, incl. falhas esperadas | Cucumber HTML + Allure: screenshot em todos os cenários (negativos incluídos), vídeo/trace em falhas, `@known-defect` com link para `docs/bugs/` |
 | CI: API, E2E e mobile a cada commit | `.github/workflows/ci.yml` |
-| CI: relatório das execuções | Artifacts + GitHub Pages + job summary + seção README |
+| CI: relatório das execuções | Job summary + artifacts + Allure consolidado + seção README com links das execuções |
 | Carga: K6, 500 VUs, 5 min | `load/scripts/carga-500vus.js` |
 | Carga: métricas, gargalos, relatório e análise | K6 dashboard + `ANALISE.md` |
 | Mobile: Appium, login, navegação, validar elemento | `mobile/tests/login.spec.ts` |
 | Mobile: formulário + envio | `mobile/tests/formulario.spec.ts` |
 | Mobile: locators nativos | accessibility id / resource-id |
+| Mobile: configuração do ambiente (critério de avaliação) | README: Android SDK, emulador, Appium/driver, variáveis (`ANDROID_HOME`, `JAVA_HOME`) |
 | Mobile: relatório | Playwright HTML + Allure |
-| Projeto no GitHub/GitLab | GitHub — `MarcosJRuiz/out` (público na entrega) |
-| Evidências salvas | `reports/` por módulo + artifacts + Pages |
+| Projeto no GitHub/GitLab | GitHub — `MarcosJRuiz/out` (**precisa estar acessível ao avaliador na entrega**) |
+| Evidências salvas | Artifacts por execução + **`evidencias/` versionado na entrega** (artifacts expiram) + Pages quando público |
 | README completo | Seção 6 |
 
 ---
@@ -453,5 +462,12 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Load test **fora do pipeline por commit**: workflow próprio, só manual (`workflow_dispatch`) e agendado; implementado na **última fase**
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
 
-**Pendentes:**
-- [ ] Quando tornar o repo público (sugestão: no fim da Fase 6, antes da entrega)?
+**Pendentes (decisão):**
+- [ ] Acesso do avaliador na entrega: tornar o repo **público** (sugestão, no fim da Fase 6) ou manter privado e **convidar o avaliador** como colaborador? *Obrigatório resolver antes da entrega — o PDF exige o projeto publicado.*
+- [ ] Evidências versionadas: na Fase 5, gerar um snapshot final dos relatórios e commitar em `evidencias/` (artifacts do Actions expiram e o Pages só existe com repo público) — ok?
+
+**Pendentes (validação técnica, durante as fases):**
+- [ ] Fase 1 — ServeRest: status retornado para método inválido (405/404) e comportamento de PUT com id inexistente
+- [ ] Fase 2 — AutomationExercise: confirmar mensagens e fluxos ao automatizar (exploração já feita)
+- [ ] Fase 3 — My Demo App: confirmar tela de login, credenciais, formulário de endereço e mensagens de validação
+- [ ] Fase 6 — K6: calibrar thresholds após a primeira execução
