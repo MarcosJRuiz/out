@@ -157,7 +157,7 @@ _diversos/out/
 
 | # | Cenário | Tipo | Pedido no PDF? | Comportamento esperado | Site se comporta corretamente? |
 |---|---|---|---|---|---|
-| L1 | Login válido e navegação até o formulário **Contact Us** | Positivo | Sim | Exibe "Logged in as <nome>"; Contact Us abre com URL, título e campos corretos | **Sim** |
+| L1 | Login válido e navegação até o formulário **Contact Us** | Positivo | Sim | Após o login exibe "Logged in as <nome>"; no Contact Us: URL `/contact_us`, título "Get In Touch", campos do formulário visíveis e "Logged in as <nome>" ainda presente (sessão ativa) | **Sim** |
 | L2 | Senha incorreta | Negativo | Sim | Recusa o login com "Your email or password is incorrect!" | **Sim** |
 | L3 | Usuário inexistente | Negativo | Sim | Recusa o login com "Your email or password is incorrect!" | **Sim** |
 | L4 | E-mail em branco | Negativo | Sim | Navegador bloqueia o envio (validação HTML5 `valueMissing`) | **Sim** |
@@ -166,6 +166,8 @@ _diversos/out/
 | L7 | Cadastro com e-mail já existente | Negativo | Extra | Recusa com "Email Address already exist!" | **Sim** |
 
 **Resultado da Tarefa 1:** o site atende **100%** do que o PDF pede.
+
+> **Por que Contact Us:** é o formulário mais completo do site (nome, e-mail, assunto, mensagem, anexo). Como a página também abre sem login, o L1 valida "Logged in as <nome>" **na própria página do formulário**, comprovando que a navegação ocorreu com a sessão autenticada. O checkout (único formulário que exige login) fica reservado para a Tarefa 2.
 
 **Tarefa 2 — `checkout.feature`:**
 
@@ -430,6 +432,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Cucumber puro (`@cucumber/cucumber`) no E2E
 - [x] Mobile: Appium com Playwright Test como runner (Cypress e Playwright mobile web descartados)
 - [x] Site alvo do E2E: AutomationExercise para todos os cenários
+- [x] Destino da navegação na Tarefa 1 do E2E: formulário **Contact Us**, validando também que a sessão continua ativa ("Logged in as <nome>")
 - [x] Plataforma: GitHub — repositório `MarcosJRuiz/out` (nome mantido)
 - [x] Repo **privado** durante o desenvolvimento
 - [x] PDF da avaliação não versionado; histórico limpo
@@ -441,6 +444,5 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
 
 **Pendentes:**
-- [ ] Formulário de destino da navegação no login: Contact Us — ok?
 - [ ] App mobile: Sauce Labs My Demo App (Android) — ok? iOS fora do escopo?
 - [ ] Quando tornar o repo público (sugestão: no fim da Fase 6, antes da entrega)?
