@@ -14,8 +14,9 @@
 | Exploração do site E2E (AutomationExercise) | ✅ Concluída — atende o PDF; 2 defeitos confirmados (seção 4.2) |
 | Spike mobile na CI | ✅ Aprovado — branch `spike/mobile-ci` (seção 4.3) |
 | Repositório | ✅ Criado; histórico limpo sem o PDF |
-| Fase 0 — Fundação | ✅ Concluída (branch `feat/fase-0-fundacao`) |
-| Fase 1 — API | ✅ Concluída (branch `feat/fase-1-api`): 57 testes, estáveis em execução repetida |
+| Fase 0 — Fundação | ✅ Integrada à `main` (PR #3) |
+| Fase 1 — API | ✅ Integrada à `main` (PRs #4 e ajustes): 60 testes, estáveis em execução repetida |
+| Otimização da CI | ✅ Integrada (PR #5): cache do emulador testado e descartado; **job mobile desativado até a Fase 3** (seção 5) |
 | Fases 2 a 6 | ⏳ Não iniciadas |
 
 ---
@@ -130,7 +131,11 @@ _diversos/out/
 
 **Relatório:** Playwright HTML + Allure, com request/response anexados em falhas.
 
-**Resultado da Fase 1:** 57 testes (login 7, usuários 16, produtos 17, carrinhos 9, métodos/payload 8), sendo 37 negativos; 171/171 aprovados com `--repeat-each=3` em paralelo; a massa criada é removida ao final (sobram apenas os dados iniciais do ServeRest).
+**Resultado da Fase 1:** 60 testes (login 7, usuários 15, produtos 17, carrinhos 9, métodos/payload 12), sendo 40 negativos; 180/180 aprovados com `--repeat-each=3` em paralelo; a massa criada é removida ao final (sobram apenas os dados iniciais do ServeRest).
+
+**Ajustes pós-revisão contra o PDF:**
+- JSON malformado coberto em **todos os métodos com corpo** (POST `/login`, `/usuarios`, `/produtos`, `/carrinhos`; PUT `/usuarios/{id}`, `/produtos/{id}`).
+- Evidência em **todo teste** (não só nas falhas): `requisicoes-http.json` anexado ao relatório com requisição, status, headers e corpo de cada chamada.
 
 **Achados registrados no README:**
 - JSON malformado → resposta **sem CORS e sem headers de segurança** (todas as outras respostas trazem); o teste verifica a ausência e registra anotação `achado` no relatório.
@@ -254,7 +259,7 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 | Evidências | Artifact `mobile-report`: relatório HTML, screenshots, page source (XML) e **log do Appium**; *a fazer:* **logcat** |
 | Custo | Repo **privado** no plano Free → 2.000 min/mês; o job mobile consome ~6 min por execução. Ao tornar público, minutos ilimitados |
 
-Workflow validado no spike (`.github/workflows/ci.yml`, job mobile). *Versão sem cache — a versão atual, com o cache do emulador, está no próprio arquivo:*
+Workflow validado no spike (`.github/workflows/ci.yml`, job mobile — hoje comentado até a Fase 3):
 
 ```yaml
 mobile-tests:
@@ -330,7 +335,7 @@ Medição da execução sem cache (5m46s no total):
 
   Conclusão: no runner gratuito, o cache do emulador custa mais do que economiza. Cache removido.
 - **Ajuste mantido:** limpeza de disco sem a etapa de imagens Docker (37 s → 23 s).
-- **Solução adotada para o tempo de feedback:** até a Fase 3, o job mobile não roda nos pushes de branches (só na `main` e manualmente) — ver seção 5. Push em branch passa a levar ~20 s a 1 min.
+- **Solução adotada para o tempo de execução:** até a Fase 3, o job mobile fica **comentado** no `ci.yml` — ver seção 5. A pipeline passa a levar ~1 min.
 
 Próximos ajustes no job: upload do logcat.
 
@@ -418,7 +423,7 @@ evidencias/
 
 > **Decidido:** API, E2E e mobile rodam **a cada commit** e são **bloqueantes** (falha em qualquer um deixa a pipeline vermelha), conforme o item 3 do PDF. O job mobile tem `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3. Exceção intencional: o job `@known-defect` é não bloqueante, pois contém testes que devem falhar.
 >
-> **Regra provisória até a Fase 3 (decidida para reduzir o tempo de feedback):** em pushes de branches, o job `mobile-tests` é **pulado** — rodam só `lint` (e API/E2E quando existirem), com retorno em ~20 s a 1 min. O mobile roda **no merge para a `main`** e **manualmente** (`workflow_dispatch`), continuando a vigiar a infraestrutura. **Na Fase 3 a condição é removida** e o mobile volta a rodar em todo push — a entrega final atende o item 3 do PDF.
+> **Regra provisória até a Fase 3 (decidida para reduzir o tempo de execução):** o job `mobile-tests` está **comentado** no `ci.yml` — a pipeline roda só `lint` e `api-tests` (e E2E quando existir), em ~1 min, inclusive na `main`. Antes, a regra era rodar o mobile só na `main`; foi endurecida para tirar também os ~6 min dos merges. **Na Fase 3 o bloco é descomentado** (sem a condição `if`) e o mobile volta a rodar em todo push — a entrega final atende o item 3 do PDF. Até lá, a infraestrutura mobile não é verificada a cada merge (risco aceito; validada no spike).
 >
 > Enquanto o repo for privado (plano Free), não há proteção de branch: "bloqueante" significa pipeline vermelha, sem impedir merge. Ao tornar o repo público, ativar a regra de checks obrigatórios na `main`.
 
@@ -447,8 +452,8 @@ evidencias/
 | 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ✅ |
 | 1 | API (Playwright) + job `api-tests` na CI (antecipado da Fase 4) | 1,5 dia | ✅ |
 | 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
-| 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike; **remover a condição provisória do job `mobile-tests`** para voltar a rodar em todo push | 1 dia | ⏳ |
-| 4 | CI/CD: jobs de API e E2E, job `@known-defect`, Allure consolidado, job summary (lint, cache do npm e cache do emulador já antecipados) | 0,5 dia | ⏳ |
+| 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike; **descomentar o job `mobile-tests` no `ci.yml` (sem a condição `if`)** para voltar a rodar em todo push | 1 dia | ⏳ |
+| 4 | CI/CD: job E2E, job `@known-defect`, Allure consolidado, job summary (lint, cache do npm e job de API já antecipados) | 0,5 dia | ⏳ |
 | 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
 | 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
 | | **Total restante** | **≈ 6,5 dias** | |
@@ -525,7 +530,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Job mobile viável na CI (spike aprovado)
 - [x] Estratégia `@known-defect` para cartão inválido (C5) e endereço incompleto (C6): cenário esperando o comportamento correto + bug report + job não bloqueante
 - [x] Fluxo de branches: spike integrado à `main` via PR; cada fase em branch própria (`feat/fase-N-...`) com PR para a `main`
-- [x] Job mobile **bloqueante** e executado **a cada commit** junto com API e E2E, conforme o PDF (item 3) — **a partir da Fase 3**; até lá roda só na `main` e manualmente, para reduzir o tempo de execução
+- [x] Job mobile **bloqueante** e executado **a cada commit** junto com API e E2E, conforme o PDF (item 3) — **a partir da Fase 3**; até lá o job fica comentado no `ci.yml`, para reduzir o tempo de execução
 - [x] Load test **fora do pipeline por commit**: workflow próprio, só manual (`workflow_dispatch`) e agendado; implementado na **última fase**
 - [x] Evidências versionadas na pasta **`evidencias/`** do repositório (artifacts do Actions expiram e o Pages só existe com repo público) — ver seção 5.1
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)

@@ -5,14 +5,29 @@ export type Troca = {
   url: string;
   requisicao?: unknown;
   status: number;
-  resposta: string;
+  headers: Record<string, string>;
+  resposta: unknown;
 };
 
-/** Guarda as requisições do teste para anexar ao relatório quando ele falhar. */
+/** Guarda as requisições do teste para anexá-las ao relatório como evidência. */
 export class HttpLog {
   readonly trocas: Troca[] = [];
 
   async registrar(metodo: string, url: string, requisicao: unknown, response: APIResponse) {
-    this.trocas.push({ metodo, url, requisicao, status: response.status(), resposta: await response.text() });
+    const texto = await response.text();
+    let resposta: unknown = texto;
+    try {
+      resposta = JSON.parse(texto);
+    } catch {
+      // corpo não-JSON: mantém o texto
+    }
+    this.trocas.push({
+      metodo,
+      url,
+      requisicao,
+      status: response.status(),
+      headers: response.headers(),
+      resposta,
+    });
   }
 }

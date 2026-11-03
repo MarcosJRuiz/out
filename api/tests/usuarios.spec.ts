@@ -108,17 +108,6 @@ test.describe('/usuarios', () => {
           administrador: "administrador deve ser 'true' ou 'false'",
         });
       });
-
-      test('recusa JSON malformado', async ({ usuariosApi }) => {
-        const corpo = await validarResposta(
-          await usuariosApi.corpoCru('POST', '/usuarios', '{"nome": "sem fechar"'),
-          400,
-          mensagemSchema,
-          { headersPadrao: false },
-        );
-
-        expect(corpo.message).toContain('Adicione aspas em todos os valores');
-      });
     });
   });
 
