@@ -17,7 +17,8 @@
 | Fase 0 — Fundação | ✅ Integrada à `main` (PR #3) |
 | Fase 1 — API | ✅ Integrada à `main` (PRs #4 e ajustes): 60 testes, estáveis em execução repetida |
 | Otimização da CI | ✅ Integrada (PR #5): cache do emulador testado e descartado; **job mobile desativado até a Fase 3** (seção 5) |
-| Fases 2 a 6 | ⏳ Não iniciadas |
+| Fase 2 — E2E | ✅ Concluída (branch `feat/fase-2-e2e`): 11 cenários aprovados (3 execuções seguidas) + 2 `@known-defect` falhando como esperado |
+| Fases 3 a 6 | ⏳ Não iniciadas |
 
 ---
 
@@ -206,7 +207,15 @@ _diversos/out/
 - CI: suíte principal roda `--tags "not @known-defect"` (gate); a suíte `@known-defect` roda em job separado, não bloqueante, e aparece no relatório como falha esperada.
 - Bug reports documentados no README (`docs/bugs/`) com passos, esperado × obtido e evidências.
 
-**Relatório:** Cucumber HTML (`multiple-cucumber-html-reporter`) com evidências + Allure.
+**Relatório:** Cucumber HTML (formatador nativo `html` do Cucumber, arquivo único com screenshots e vídeos embutidos — substitui o `multiple-cucumber-html-reporter` previsto, sem dependência extra) + Allure (`allure-cucumberjs`).
+
+**Resultado da Fase 2:**
+- Gherkin em português (`# language: pt`); 7 cenários de login (L1–L7) e 6 de checkout (C1–C6).
+- Suíte principal: **11/11 aprovados em 3 execuções seguidas** (~36–45 s, 2 cenários em paralelo).
+- Evidência por validação: `AfterStep` tira screenshot após cada passo de resultado ("Então"/"E") e após qualquer passo que falhe, nomeado com o texto do passo (ex.: C1 → carrinho, endereço e confirmação). Vídeo e trace continuam só nas falhas.
+- `@known-defect`: C5 e C6 falham com mensagens claras (C5: foi para `/payment_done/<id>`; C6: chegou a `/payment`), com screenshot, vídeo, trace e link para `docs/bugs/BUG-001` e `BUG-002`.
+- CI: job `e2e-tests` (bloqueante) e `e2e-known-defects` (o passo de testes usa `continue-on-error`; o resumo registra os bugs reproduzidos e emite aviso se os cenários passarem — sinal de que o bug foi corrigido).
+- Requisito de ambiente: **Node 24** (o Cucumber 13 recusa o Node 25); instalado via `nvm install` a partir do `.nvmrc`.
 
 ---
 
@@ -451,7 +460,7 @@ evidencias/
 | — | Exploração do site E2E + spike mobile na CI | — | ✅ Concluído |
 | 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ✅ |
 | 1 | API (Playwright) + job `api-tests` na CI (antecipado da Fase 4) | 1,5 dia | ✅ |
-| 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
+| 2 | E2E (Cucumber + Playwright) + jobs `e2e-tests` e `e2e-known-defects` na CI (antecipados da Fase 4) | 2 dias | ✅ |
 | 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike; **descomentar o job `mobile-tests` no `ci.yml` (sem a condição `if`)** para voltar a rodar em todo push | 1 dia | ⏳ |
 | 4 | CI/CD: job E2E, job `@known-defect`, Allure consolidado, job summary (lint, cache do npm e job de API já antecipados) | 0,5 dia | ⏳ |
 | 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
