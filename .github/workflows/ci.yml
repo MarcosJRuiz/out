@@ -73,6 +73,82 @@ jobs:
           path: api/reports/
           if-no-files-found: warn
 
+  e2e-tests:
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
+
+      - name: Executar testes E2E
+        run: npm run test:ci -w e2e
+
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: e2e/reports/
+          if-no-files-found: warn
+
+  # Cenários que esperam o comportamento correto e falham por defeitos do site (docs/bugs/).
+  # Não bloqueante: a falha é esperada e fica registrada no relatório como evidência.
+  # Se os cenários passarem, o bug pode ter sido corrigido: o job emite um aviso para revisão.
+  e2e-known-defects:
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
+
+      - name: Executar cenários de defeitos conhecidos
+        id: defeitos
+        continue-on-error: true
+        run: npm run test:known-defects -w e2e
+
+      - name: Resumo dos defeitos conhecidos
+        if: always()
+        run: |
+          if [ "${{ steps.defeitos.outcome }}" = "failure" ]; then
+            {
+              echo "### Defeitos conhecidos reproduzidos (falha esperada)"
+              echo "- BUG-001: pagamento aceita cartão inválido — docs/bugs/BUG-001-cartao-invalido-aceito.md"
+              echo "- BUG-002: compra segue sem endereço de entrega — docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Os cenários @known-defect passaram: os bugs podem ter sido corrigidos no site. Revise docs/bugs/ e as tags."
+          fi
+
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-known-defects-report
+          path: e2e/reports/
+          if-no-files-found: warn
+
   # ---------------------------------------------------------------------------
   # Job mobile DESATIVADO até a Fase 3, para a pipeline rodar mais rápido.
   # Infraestrutura validada no spike (emulador Android + Appium, ~5-6 min).
