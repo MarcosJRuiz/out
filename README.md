@@ -1,8 +1,15 @@
 # Outsera — Automação de Testes
 
-Projeto de automação de testes de API, E2E, mobile e carga, com execução contínua no GitHub Actions.
+Projeto de automação de testes de **API**, **E2E** e **mobile**, com execução a cada commit no GitHub Actions, relatório consolidado e evidências versionadas.
 
-> 🚧 Em construção. O planejamento completo está em [PLANO.md](PLANO.md).
+| Módulo | Ferramentas                            | Aplicação testada                                                    | Testes                     |
+| ------ | -------------------------------------- | -------------------------------------------------------------------- | -------------------------- |
+| API    | Playwright Test                        | [ServeRest](https://serverest.dev) (local, Docker)                   | 60                         |
+| E2E    | Cucumber + Playwright                  | [AutomationExercise](https://automationexercise.com)                 | 11 + 2 defeitos conhecidos |
+| Mobile | Appium + WebdriverIO + Playwright Test | [My Demo App](https://github.com/saucelabs/my-demo-app-rn) (Android) | 7                          |
+| CI/CD  | GitHub Actions                         | —                                                                    | 6 jobs                     |
+
+**Resultado atual:** 80 testes — 78 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências em [`evidencias/`](evidencias/).
 
 ## Estrutura
 
@@ -11,13 +18,25 @@ Projeto de automação de testes de API, E2E, mobile e carga, com execução con
 ├── api/                  # Testes de API — Playwright Test + ServeRest
 ├── e2e/                  # Testes E2E — Cucumber + Playwright (AutomationExercise)
 ├── mobile/               # Testes mobile — Playwright Test + WebdriverIO + Appium (My Demo App, Android)
-├── load/                 # Testes de carga — K6 (em construção)
+├── load/                 # Testes de carga — K6 (opcional, planejado)
 ├── docs/bugs/            # Bug reports dos defeitos encontrados
 ├── evidencias/           # Snapshot versionado dos relatórios
-├── scripts/              # Consolidação dos relatórios (Allure e resumo da pipeline)
+├── scripts/              # Relatório consolidado (Allure + resumo) e snapshot das evidências
 ├── allurerc.mjs          # Configuração do relatório Allure consolidado
 ├── docker-compose.yml    # ServeRest local
 └── .github/workflows/    # Pipeline de CI
+```
+
+Cada módulo de teste é um workspace npm com `package.json`, configuração e relatórios próprios:
+
+```
+api/                               e2e/                               mobile/
+├── tests/        *.spec.ts        ├── features/     *.feature (pt)   ├── tests/        *.spec.ts
+├── clients/      por recurso      ├── steps/        step definitions ├── screens/      Screen Objects
+├── fixtures/     clients e massa  ├── pages/        Page Objects     ├── fixtures/     sessão Appium
+├── schemas/      contratos (Zod)  ├── support/      World e hooks    ├── support/      Appium e app
+├── support/      validações       └── cucumber.mjs                   └── playwright.config.ts
+└── playwright.config.ts
 ```
 
 ## Stack e versões
@@ -79,6 +98,9 @@ npm run -w mobile driver:install         # driver UiAutomator2 do Appium (uma ve
 npm run -w mobile app:download           # APK do My Demo App (uma vez)
 npm run test:mobile
 npx playwright show-report mobile/reports/html
+
+# Relatório consolidado (Allure) com os resultados locais dos módulos
+npm run relatorio
 ```
 
 ## Testes de API
@@ -156,6 +178,8 @@ npm run format:check  # Prettier
 npm run typecheck     # TypeScript
 ```
 
+Padrões: EditorConfig, ESLint (flat config + typescript-eslint), Prettier, TypeScript estrito e Conventional Commits.
+
 ## Pipeline de CI (GitHub Actions)
 
 Arquivo: `.github/workflows/ci.yml`. Roda **a cada push** em qualquer branch (e manualmente pela aba Actions).
@@ -185,5 +209,42 @@ lint ──┬─> api-tests            ServeRest como container de serviço    
 
 ## Relatórios e evidências
 
-- Relatórios de cada execução da pipeline: artifacts do GitHub Actions
-- Evidências versionadas: [evidencias/](evidencias/)
+| Onde                                      | O quê                                                                                                                                                               |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`evidencias/`](evidencias/)              | **Snapshot versionado:** relatório Allure consolidado (`allure-report.html`, abre direto no navegador), resumo dos resultados e relatório das execuções da pipeline |
+| Página de cada execução no GitHub Actions | Resumo por módulo e artifacts: `relatorio-consolidado`, `api-report`, `e2e-report`, `e2e-known-defects-report`, `mobile-report`                                     |
+| Local, após rodar os testes               | `api/reports/html`, `e2e/reports/cucumber-report.html`, `mobile/reports/html`; consolidado com `npm run relatorio` → `reports/allure-report/index.html`             |
+
+Atualizar as evidências a partir da última execução bem-sucedida na `main` (requer o GitHub CLI autenticado): `npm run evidencias`.
+
+## Cobertura dos requisitos da avaliação
+
+| Requisito                                                                                                   | Onde                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| API: status code, headers e corpo; positivos e negativos (dados inválidos, ausentes, autenticação inválida) | [Testes de API](#testes-de-api) — `support/assertions.ts` valida as três partes em toda resposta                          |
+| API: GET, POST, PUT e DELETE em vários endpoints; método inválido, payload malformado e dados ausentes      | `usuarios`, `produtos`, `carrinhos`, `login` e `metodos-http.spec.ts`                                                     |
+| E2E com Cucumber: login, navegação até um formulário, assertivas, positivos e negativos, Page Object        | `login.feature` (L1–L7) e `e2e/pages/`                                                                                    |
+| E2E: checkout (carrinho, pagamento, finalização), cartão inválido e endereço incompleto                     | `checkout.feature` (C1–C6); C5 e C6 comprovam defeitos do site                                                            |
+| E2E: relatório com evidências, incluindo falhas esperadas                                                   | Screenshot em cada validação; vídeo e trace nas falhas; relatório consolidado                                             |
+| CI/CD: API, E2E e mobile a cada commit, com relatório das execuções                                         | [Pipeline de CI](#pipeline-de-ci-github-actions) e [`evidencias/pipeline/execucoes.md`](evidencias/pipeline/execucoes.md) |
+| Mobile (Appium): login, navegação, validação de elemento, formulário; locators nativos                      | [Testes mobile](#testes-mobile)                                                                                           |
+| Projeto no GitHub, evidências salvas e README                                                               | Este repositório, [`evidencias/`](evidencias/) e este arquivo                                                             |
+
+## Decisões técnicas
+
+- **Playwright como base:** runner da API e do mobile e biblioteca do E2E — mesma linguagem (TypeScript), mesmas asserções e relatórios.
+- **Cucumber puro (`@cucumber/cucumber`) no E2E:** atende ao requisito de Cucumber de forma explícita (World, hooks e perfis do próprio Cucumber), com Playwright como biblioteca.
+- **Appium com Playwright Test como runner:** o Playwright não automatiza apps nativos; o Appium faz a automação e o Playwright Test fornece fixtures, retries e relatórios.
+- **ServeRest local (Docker):** API com autenticação, perfis e regras de negócio reais, estável na CI e sem depender de serviço externo.
+- **Massa de dados pela API** em API e E2E: cada teste cria e remove os próprios dados, permitindo execução paralela e independente.
+- **Defeitos conhecidos como testes que falham:** os cenários esperam o comportamento correto, ficam marcados com `@known-defect` e rodam num job não bloqueante — o bug fica visível sem deixar a pipeline vermelha.
+- **Versões fixadas** em todos os `package.json` (`.npmrc` com `save-exact`), na imagem Docker e no driver do Appium.
+
+## Limitações conhecidas
+
+- O E2E depende do site público AutomationExercise, que às vezes responde "under heavy load"; os testes tentam de novo automaticamente, mas indisponibilidade prolongada derruba o job.
+- Mobile só em Android; iOS exigiria runner macOS e driver XCUITest.
+- Para rodar o mobile localmente é preciso Android SDK e um emulador; na CI isso é provisionado pelo workflow.
+- O repositório é privado durante o desenvolvimento; o GitHub Pages (relatório com histórico online) depende de torná-lo público.
+
+O planejamento completo, com decisões, riscos e histórico de cada fase, está em [PLANO.md](PLANO.md).
