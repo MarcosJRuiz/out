@@ -1,0 +1,9 @@
+node_modules/
+package-lock.json
+**/reports/
+**/allure-results/
+**/allure-report/
+**/test-results/
+**/playwright-report/
+evidencias/
+PLANO.md

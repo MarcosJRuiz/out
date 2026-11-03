@@ -5,8 +5,37 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Push e pull_request do mesmo branch caem no mesmo grupo: só a execução mais recente continua.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: TypeScript
+        run: npm run typecheck
+
   mobile-tests:
+    needs: lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -28,6 +57,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+          cache: npm
 
       - name: Instalar dependências
         run: npm ci

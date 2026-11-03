@@ -14,7 +14,8 @@
 | Exploração do site E2E (AutomationExercise) | ✅ Concluída — atende o PDF; 2 defeitos confirmados (seção 4.2) |
 | Spike mobile na CI | ✅ Aprovado — branch `spike/mobile-ci` (seção 4.3) |
 | Repositório | ✅ Criado; histórico limpo sem o PDF |
-| Fases 0 a 6 | ⏳ Não iniciadas |
+| Fase 0 — Fundação | ✅ Concluída (branch `feat/fase-0-fundacao`) |
+| Fases 1 a 6 | ⏳ Não iniciadas |
 
 ---
 
@@ -119,12 +120,12 @@ _diversos/out/
 |---|---|---|
 | `POST /login` | credenciais válidas → 200 + token | senha errada (401); e-mail inexistente (401); campos ausentes (400); e-mail mal formatado (400) |
 | `GET /usuarios` | listar; buscar por id; filtro por query | id inexistente (400) |
-| `POST /usuarios` | cadastro válido (201) | e-mail duplicado; campos obrigatórios ausentes; tipo inválido; **JSON malformado** |
-| `PUT /usuarios/{id}` | atualização válida (200) | e-mail já usado por outro; payload inválido; id inexistente (ServeRest **cria** o registro → testar e documentar) |
+| `POST /usuarios` | cadastro válido (201) | e-mail duplicado; campos obrigatórios ausentes; tipo inválido; **JSON malformado** → **400** (validado na Fase 0) |
+| `PUT /usuarios/{id}` | atualização válida (200) | e-mail já usado por outro; payload inválido; id inexistente → ServeRest **cria** o registro (**201** "Cadastro realizado com sucesso", validado na Fase 0) |
 | `DELETE /usuarios/{id}` | exclusão (200) | usuário com carrinho (regra de negócio, 400); id inexistente (mensagem "nenhum registro") |
 | `POST/PUT/DELETE /produtos` | CRUD com admin | **sem token (401)**; **token inválido/expirado (401)**; **usuário não-admin (403)**; nome duplicado; preço/quantidade inválidos |
 | `/carrinhos` | criar, consultar, concluir e cancelar compra | produto inexistente; estoque insuficiente; segundo carrinho para o mesmo usuário |
-| Método inválido | — | ex.: `PATCH /usuarios`, `DELETE /login` → **verificar** status retornado (405/404) e documentar |
+| Método inválido | — | `PATCH /usuarios`, `DELETE /login` → **405** com mensagem "Não é possível realizar ..." (validado na Fase 0) |
 
 **Relatório:** Playwright HTML + Allure, com request/response anexados em falhas.
 
@@ -409,7 +410,7 @@ evidencias/
 | Fase | Escopo | Estimativa | Status |
 |---|---|---|---|
 | — | Exploração do site E2E + spike mobile na CI | — | ✅ Concluído |
-| 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ⏳ |
+| 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ✅ |
 | 1 | API (Playwright) | 1,5 dia | ⏳ |
 | 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
 | 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
@@ -470,7 +471,8 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | Repo privado: minutos de CI limitados e sem GitHub Pages | Consumo da cota (~15 min por push com API + E2E + mobile → ~130 pushes/mês) | Todos os jobs rodam a cada commit (exigência do PDF); acompanhar o consumo; publicar Pages ao tornar o repo público |
 | Versões novas incompatíveis (ex.: driver UiAutomator2 9.x exige Appium 4) | Quebra na instalação | Todas as versões fixadas (`package.json`, `package-lock.json`, scripts) |
 | 500 VUs saturando a máquina geradora (não a API) | Análise distorcida | Monitorar CPU do gerador; documentar recursos; rodar local/manual |
-| Divergência de comportamento do ServeRest (status de método inválido, PUT em id inexistente) | Asserções erradas | Validar na Fase 1 e documentar o comportamento real |
+| Divergência de comportamento do ServeRest (status de método inválido, PUT em id inexistente) | Asserções erradas | **Validado na Fase 0** (405 / 201); imagem Docker fixada em 3.2.2 |
+| Porta 3000 ocupada na máquina local | ServeRest não sobe | Porta configurável via `SERVEREST_PORT` |
 
 ---
 
@@ -498,7 +500,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [ ] Acesso do avaliador na entrega: tornar o repo **público** (sugestão, no fim da Fase 6) ou manter privado e **convidar o avaliador** como colaborador? *Obrigatório resolver antes da entrega — o PDF exige o projeto publicado.*
 
 **Pendentes (validação técnica, durante as fases):**
-- [ ] Fase 1 — ServeRest: status retornado para método inválido (405/404) e comportamento de PUT com id inexistente
+- [x] ServeRest: método inválido → 405; JSON malformado → 400; PUT com id inexistente → 201 (cria o registro) — validado na Fase 0
 - [ ] Fase 2 — AutomationExercise: confirmar mensagens e fluxos ao automatizar (exploração já feita)
 - [ ] Fase 3 — My Demo App: confirmar tela de login, credenciais, formulário de endereço e mensagens de validação
 - [ ] Fase 6 — K6: calibrar thresholds após a primeira execução
