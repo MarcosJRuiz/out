@@ -42,7 +42,7 @@
 | `e2e/` | `@cucumber/cucumber` (puro) | Playwright (biblioteca) | AutomationExercise | Cucumber HTML (screenshots/vídeo/trace) + Allure |
 | `mobile/` | Playwright Test | WebdriverIO (standalone) → Appium 3 + UiAutomator2 | Sauce Labs My Demo App (Android) | Playwright HTML + Allure |
 | `load/` | K6 | — | ServeRest (local, Docker) | K6 Web Dashboard (HTML) + `ANALISE.md` |
-| CI | GitHub Actions | 1 job por módulo | — | Artifacts por job + Allure consolidado (GitHub Pages quando o repo for público) |
+| CI | GitHub Actions | 1 job por módulo | — | **Allure consolidado** (principal) + nativos como artifacts; GitHub Pages quando o repo for público |
 
 **Linguagem:** TypeScript em todos os módulos (K6 em JavaScript, padrão da ferramenta).
 
@@ -317,6 +317,18 @@ load-test: apenas workflow_dispatch / agendado (não roda a cada commit)
 - Cache de npm e dos browsers do Playwright.
 - Relatórios de cada job como **artifacts** + Allure consolidado com histórico no **GitHub Pages**.
 - ⚠️ GitHub Pages **não está disponível em repo privado no plano Free**. Enquanto o repo for privado, os relatórios ficam só como artifacts; o Pages entra quando o repo for tornado público.
+
+**Estratégia de relatórios (decidida):**
+
+| Relatório | Papel | Origem |
+|---|---|---|
+| **Allure consolidado** | **Principal** — porta de entrada (link no topo do README): visão única de API + E2E + mobile, agrupado por módulo/tag/severidade, `@known-defect` como falhas esperadas, links para os bug reports e histórico/tendência (quando no Pages) | `allure-playwright` (API e mobile) + `allure-cucumberjs` (E2E) → job `publish-reports` junta os `allure-results` |
+| Playwright HTML + Trace Viewer | Complemento — investigação detalhada de falhas de API e mobile | Nativo |
+| Cucumber HTML | Complemento — cenários em Gherkin com screenshots/vídeo | Nativo |
+| K6 Web Dashboard + `ANALISE.md` | Relatório próprio da carga (o Allure não se aplica a métricas de performance) | Nativo |
+
+- Enquanto o repo for privado: Allure gerado como **arquivo HTML único** (`--single-file`), publicado como artifact — abre direto no navegador, sem servidor.
+- Quando o repo for público: Allure publicado no **GitHub Pages** com histórico entre execuções.
 - Job summary (`$GITHUB_STEP_SUMMARY`) com totais por módulo.
 - Badge de status e link dos relatórios no README.
 - Relatório de execuções do pipeline (exigido no item 3): seção no README com prints/links das execuções.
@@ -416,6 +428,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Repo **privado** durante o desenvolvimento
 - [x] PDF da avaliação não versionado; histórico limpo
 - [x] Job mobile viável na CI (spike aprovado)
+- [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
 
 **Pendentes:**
 - [ ] Formulário de destino da navegação no login: Contact Us — ok?
@@ -423,6 +436,5 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [ ] App mobile: Sauce Labs My Demo App (Android) — ok? iOS fora do escopo?
 - [ ] Job mobile obrigatório (bloqueante) na pipeline?
 - [ ] Load test fora do pipeline por commit (apenas manual/agendado)?
-- [ ] Allure consolidado como relatório principal + relatórios nativos como complemento?
 - [ ] Branch do spike: abrir PR `spike/mobile-ci` → `main` e seguir a partir dele, ou começar a Fase 0 na `main`?
 - [ ] Quando tornar o repo público (sugestão: na Fase 6, antes da entrega)?
