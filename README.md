@@ -140,6 +140,7 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 
 - **Locators nativos:** accessibility id (`content-desc`) em todos os elementos, sem XPath; rolagem com `UiScrollable` para campos abaixo da dobra.
 - **Isolamento e tempo:** uma sessão do Appium por execução (abrir sessão custa ~40 s); antes de cada teste o app é limpo (`mobile: clearApp`) e reaberto no catálogo.
+- **Estabilidade no emulador da CI:** se o catálogo não aparecer ao abrir o app, o teste dispensa diálogos do sistema Android ("isn't responding"), reinicia o app e tenta de novo (até 3 vezes), anexando screenshot, page source e logcat de cada tentativa. Na pipeline, a imagem do Android é baixada antes do emulador com até 3 tentativas (o download às vezes chega corrompido).
 - **Evidências:** screenshot em cada ponto de validação e da tela final de todo teste; XML da tela (page source) nas falhas; log do Appium em `mobile/reports/appium.log`.
 - **Relatórios:** `mobile/reports/html` e resultados Allure em `mobile/reports/allure-results`.
 - **Limitações:** só Android (iOS exigiria runner macOS e driver XCUITest — melhoria futura); o Trace Viewer do Playwright não se aplica a app nativo.

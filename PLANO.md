@@ -261,6 +261,15 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 - WebdriverIO 10 usa modo estrito em `$()` (falha se houver mais de um elemento): listas usam `$$()`.
 - Job `mobile-tests` reativado no `ci.yml` **sem a condição de branch** — volta a rodar em todo push (item 3 do PDF).
 
+**Incidentes de estabilidade na CI (Fase 3) e correções:**
+
+| Execução | Sintoma | Causa | Correção |
+|---|---|---|---|
+| Commit só de documentação | Todos os testes e retries falharam ao abrir o app: catálogo não aparecia em 60 s (job de 21 min); nenhuma evidência salva, pois a falha era na preparação | Provável diálogo do sistema Android ("System UI/App isn't responding") sobre o app — comum logo após o boot de emuladores de CI | `support/app.ts`: dispensa diálogos (`aerr_wait`/`aerr_close`), reinicia o app e tenta até 3 vezes; anexa screenshot, page source e logcat de cada tentativa |
+| Execução seguinte | Emulador não subiu (1,5 min) | Download corrompido da imagem do Android (*"Error on ZipFile unknown archive"*) | Passo "Baixar imagem do Android" antes do emulador, com até 3 tentativas |
+
+Depois das correções: 7/7 aprovados sem retry.
+
 > ⚠️ **Limitações a documentar no README:** sem Trace Viewer para mobile; Playwright não automatiza app nativo (por isso Appium).
 
 **Execução no GitHub Actions:**
