@@ -434,13 +434,13 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Repo **privado** durante o desenvolvimento
 - [x] PDF da avaliação não versionado; histórico limpo
 - [x] Job mobile viável na CI (spike aprovado)
+- [x] Estratégia `@known-defect` para cartão inválido (C5) e endereço incompleto (C6): cenário esperando o comportamento correto + bug report + job não bloqueante
+- [x] Fluxo de branches: spike integrado à `main` via PR; cada fase em branch própria (`feat/fase-N-...`) com PR para a `main`
 - [x] Job mobile **bloqueante** e executado **a cada commit** junto com API e E2E, conforme o PDF (item 3)
 - [x] Load test **fora do pipeline por commit**: workflow próprio, só manual (`workflow_dispatch`) e agendado; implementado na **última fase**
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
 
 **Pendentes:**
 - [ ] Formulário de destino da navegação no login: Contact Us — ok?
-- [ ] Estratégia `@known-defect` (cenário esperando o correto + job não bloqueante) para cartão inválido e endereço incompleto — ok?
 - [ ] App mobile: Sauce Labs My Demo App (Android) — ok? iOS fora do escopo?
-- [ ] Branch do spike: abrir PR `spike/mobile-ci` → `main` e seguir a partir dele, ou começar a Fase 0 na `main`?
 - [ ] Quando tornar o repo público (sugestão: no fim da Fase 6, antes da entrega)?
