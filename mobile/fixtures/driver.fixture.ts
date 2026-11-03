@@ -1,6 +1,7 @@
 import { test as base } from '@playwright/test';
 import path from 'node:path';
 import { remote } from 'webdriverio';
+import { abrirAppLimpo } from '../support/app';
 import { CarrinhoScreen } from '../screens/carrinho.screen';
 import { CatalogoScreen } from '../screens/catalogo.screen';
 import { EnderecoScreen } from '../screens/endereco.screen';
@@ -10,8 +11,6 @@ import { PagamentoScreen } from '../screens/pagamento.screen';
 import { ProdutoScreen } from '../screens/produto.screen';
 
 export type Driver = Awaited<ReturnType<typeof remote>>;
-
-export const APP_PACKAGE = 'com.saucelabs.mydemoapp.rn';
 
 type Telas = {
   catalogo: CatalogoScreen;
@@ -52,9 +51,7 @@ export const test = base.extend<
 
   // Cada teste começa com o app limpo (sem login e carrinho vazio), na tela de catálogo.
   driver: async ({ sessao }, use, testInfo) => {
-    await sessao.execute('mobile: clearApp', { appId: APP_PACKAGE });
-    await sessao.execute('mobile: activateApp', { appId: APP_PACKAGE });
-    await new CatalogoScreen(sessao).aguardarExibicao();
+    await abrirAppLimpo(sessao, testInfo);
 
     await use(sessao);
 
