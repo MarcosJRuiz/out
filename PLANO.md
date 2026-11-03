@@ -18,7 +18,8 @@
 | Fase 1 — API | ✅ Integrada à `main` (PRs #4 e ajustes): 60 testes, estáveis em execução repetida |
 | Otimização da CI | ✅ Integrada (PR #5): cache do emulador testado e descartado; **job mobile desativado até a Fase 3** (seção 5) |
 | Fase 2 — E2E | ✅ Concluída (branch `feat/fase-2-e2e`): 11 cenários aprovados (3 execuções seguidas) + 2 `@known-defect` falhando como esperado |
-| Fases 3 a 6 | ⏳ Não iniciadas |
+| Fase 3 — Mobile | ✅ Concluída (branch `feat/fase-3-mobile`): 7 testes aprovados na CI sem retry; job mobile reativado em todo push |
+| Fases 4 a 6 | ⏳ Não iniciadas |
 
 ---
 
@@ -237,10 +238,10 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 
 | Tarefa do PDF | No app | Validado? |
 |---|---|---|
-| Abrir o app e navegar | Catálogo "Products" → detalhe do produto → carrinho | Catálogo ✅ no spike; demais telas na Fase 3 |
-| Login | Tela de login (`bob@example.com` / `10203040`) | A confirmar na Fase 3 |
-| Validar elemento | Botão "Add to cart", preço, mensagens | A confirmar na Fase 3 |
-| Preencher e enviar formulário | Endereço de entrega no checkout, com validação de obrigatórios | A confirmar na Fase 3 |
+| Abrir o app e navegar | Catálogo "Products" → detalhe do produto → carrinho | ✅ Fase 3 |
+| Login | Tela de login (`bob@example.com` / `10203040`; `alice@example.com` bloqueado) | ✅ Fase 3 |
+| Validar elemento | Botão "Add To Cart", preço, mensagens | ✅ Fase 3 |
+| Preencher e enviar formulário | Endereço de entrega no checkout, com validação de obrigatórios | ✅ Fase 3 |
 
 **iOS fora do escopo:** o PDF não exige; exigiria runner macOS (cada minuto conta 10× em repo privado), Xcode, simulador e driver XCUITest. Fica no README como melhoria futura — a arquitetura com Appium permite adicioná-lo trocando as capabilities.
 
@@ -251,6 +252,23 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 - Negativo (extra): envio com campos obrigatórios vazios → validar mensagens de erro.
 
 **Relatório:** Playwright HTML + Allure.
+
+**Resultado da Fase 3:**
+- Mapeamento das telas feito na própria CI (sem Android local): dois testes temporários de reconhecimento capturaram XML e screenshot de cada tela; removidos depois.
+- 7 testes (Tarefa 1: 5; Tarefa 2: 2), **aprovados na CI sem retry** (~3–4 min de testes; job ~8 min).
+- Uma sessão do Appium por worker; `mobile: clearApp` + `activateApp` antes de cada teste (isolamento sem pagar ~40 s de nova sessão).
+- O teste do formulário confere o valor de cada um dos 7 campos antes de enviar — adicionado após a revisão das evidências mostrar o campo Country ainda vazio no screenshot (era só o momento da captura; o valor estava correto).
+- WebdriverIO 10 usa modo estrito em `$()` (falha se houver mais de um elemento): listas usam `$$()`.
+- Job `mobile-tests` reativado no `ci.yml` **sem a condição de branch** — volta a rodar em todo push (item 3 do PDF).
+
+**Incidentes de estabilidade na CI (Fase 3) e correções:**
+
+| Execução | Sintoma | Causa | Correção |
+|---|---|---|---|
+| Commit só de documentação | Todos os testes e retries falharam ao abrir o app: catálogo não aparecia em 60 s (job de 21 min); nenhuma evidência salva, pois a falha era na preparação | Provável diálogo do sistema Android ("System UI/App isn't responding") sobre o app — comum logo após o boot de emuladores de CI | `support/app.ts`: dispensa diálogos (`aerr_wait`/`aerr_close`), reinicia o app e tenta até 3 vezes; anexa screenshot, page source e logcat de cada tentativa |
+| Execução seguinte | Emulador não subiu (1,5 min) | Download corrompido da imagem do Android (*"Error on ZipFile unknown archive"*) | Passo "Baixar imagem do Android" antes do emulador, com até 3 tentativas |
+
+Depois das correções: 7/7 aprovados sem retry.
 
 > ⚠️ **Limitações a documentar no README:** sem Trace Viewer para mobile; Playwright não automatiza app nativo (por isso Appium).
 
@@ -268,7 +286,7 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 | Evidências | Artifact `mobile-report`: relatório HTML, screenshots, page source (XML) e **log do Appium**; *a fazer:* **logcat** |
 | Custo | Repo **privado** no plano Free → 2.000 min/mês; o job mobile consome ~6 min por execução. Ao tornar público, minutos ilimitados |
 
-Workflow validado no spike (`.github/workflows/ci.yml`, job mobile — hoje comentado até a Fase 3):
+Workflow validado no spike (`.github/workflows/ci.yml`, job mobile — reativado na Fase 3):
 
 ```yaml
 mobile-tests:
@@ -344,7 +362,7 @@ Medição da execução sem cache (5m46s no total):
 
   Conclusão: no runner gratuito, o cache do emulador custa mais do que economiza. Cache removido.
 - **Ajuste mantido:** limpeza de disco sem a etapa de imagens Docker (37 s → 23 s).
-- **Solução adotada para o tempo de execução:** até a Fase 3, o job mobile fica **comentado** no `ci.yml` — ver seção 5. A pipeline passa a levar ~1 min.
+- **Solução adotada para o tempo de execução (até a Fase 3, já encerrada):** o job mobile ficou **comentado** no `ci.yml` — ver seção 5. A pipeline passa a levar ~1 min.
 
 Próximos ajustes no job: upload do logcat.
 
@@ -432,7 +450,7 @@ evidencias/
 
 > **Decidido:** API, E2E e mobile rodam **a cada commit** e são **bloqueantes** (falha em qualquer um deixa a pipeline vermelha), conforme o item 3 do PDF. O job mobile tem `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3. Exceção intencional: o job `@known-defect` é não bloqueante, pois contém testes que devem falhar.
 >
-> **Regra provisória até a Fase 3 (decidida para reduzir o tempo de execução):** o job `mobile-tests` está **comentado** no `ci.yml` — a pipeline roda só `lint` e `api-tests` (e E2E quando existir), em ~1 min, inclusive na `main`. Antes, a regra era rodar o mobile só na `main`; foi endurecida para tirar também os ~6 min dos merges. **Na Fase 3 o bloco é descomentado** (sem a condição `if`) e o mobile volta a rodar em todo push — a entrega final atende o item 3 do PDF. Até lá, a infraestrutura mobile não é verificada a cada merge (risco aceito; validada no spike).
+> **Regra provisória até a Fase 3 — encerrada na Fase 3, o job voltou a rodar em todo push:** o job `mobile-tests` está **comentado** no `ci.yml` — a pipeline roda só `lint` e `api-tests` (e E2E quando existir), em ~1 min, inclusive na `main`. Antes, a regra era rodar o mobile só na `main`; foi endurecida para tirar também os ~6 min dos merges. **Na Fase 3 o bloco é descomentado** (sem a condição `if`) e o mobile volta a rodar em todo push — a entrega final atende o item 3 do PDF. Até lá, a infraestrutura mobile não é verificada a cada merge (risco aceito; validada no spike).
 >
 > Enquanto o repo for privado (plano Free), não há proteção de branch: "bloqueante" significa pipeline vermelha, sem impedir merge. Ao tornar o repo público, ativar a regra de checks obrigatórios na `main`.
 
@@ -461,7 +479,7 @@ evidencias/
 | 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ✅ |
 | 1 | API (Playwright) + job `api-tests` na CI (antecipado da Fase 4) | 1,5 dia | ✅ |
 | 2 | E2E (Cucumber + Playwright) + jobs `e2e-tests` e `e2e-known-defects` na CI (antecipados da Fase 4) | 2 dias | ✅ |
-| 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike; **descomentar o job `mobile-tests` no `ci.yml` (sem a condição `if`)** para voltar a rodar em todo push | 1 dia | ⏳ |
+| 3 | Mobile (Appium + Playwright runner) + job `mobile-tests` reativado em todo push (sem a condição de branch) | 1 dia | ✅ |
 | 4 | CI/CD: job E2E, job `@known-defect`, Allure consolidado, job summary (lint, cache do npm e job de API já antecipados) | 0,5 dia | ⏳ |
 | 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
 | 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
@@ -550,5 +568,5 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 **Pendentes (validação técnica, durante as fases):**
 - [x] ServeRest: método inválido → 405; JSON malformado → 400; PUT com id inexistente → 201 (cria o registro) — validado na Fase 0
 - [ ] Fase 2 — AutomationExercise: confirmar mensagens e fluxos ao automatizar (exploração já feita)
-- [ ] Fase 3 — My Demo App: confirmar tela de login, credenciais, formulário de endereço e mensagens de validação
+- [x] My Demo App: login, credenciais, formulário de endereço e mensagens de validação confirmados na Fase 3
 - [ ] Fase 6 — K6: calibrar thresholds após a primeira execução
