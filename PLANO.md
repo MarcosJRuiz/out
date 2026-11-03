@@ -405,6 +405,8 @@ evidencias/
 
 > **Decidido:** API, E2E e mobile rodam **a cada commit** e são **bloqueantes** (falha em qualquer um deixa a pipeline vermelha), conforme o item 3 do PDF. O job mobile tem `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3. Exceção intencional: o job `@known-defect` é não bloqueante, pois contém testes que devem falhar.
 >
+> **Regra provisória até a Fase 3 (decidida para reduzir o tempo de feedback):** em pushes de branches, o job `mobile-tests` é **pulado** — rodam só `lint` (e API/E2E quando existirem), com retorno em ~20 s a 1 min. O mobile roda **no merge para a `main`** e **manualmente** (`workflow_dispatch`), continuando a vigiar a infraestrutura. **Na Fase 3 a condição é removida** e o mobile volta a rodar em todo push — a entrega final atende o item 3 do PDF.
+>
 > Enquanto o repo for privado (plano Free), não há proteção de branch: "bloqueante" significa pipeline vermelha, sem impedir merge. Ao tornar o repo público, ativar a regra de checks obrigatórios na `main`.
 
 ---
@@ -432,7 +434,7 @@ evidencias/
 | 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ✅ |
 | 1 | API (Playwright) | 1,5 dia | ⏳ |
 | 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
-| 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
+| 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike; **remover a condição provisória do job `mobile-tests`** para voltar a rodar em todo push | 1 dia | ⏳ |
 | 4 | CI/CD: jobs de API e E2E, job `@known-defect`, Allure consolidado, job summary (lint, cache do npm e cache do emulador já antecipados) | 0,5 dia | ⏳ |
 | 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
 | 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
@@ -510,7 +512,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Job mobile viável na CI (spike aprovado)
 - [x] Estratégia `@known-defect` para cartão inválido (C5) e endereço incompleto (C6): cenário esperando o comportamento correto + bug report + job não bloqueante
 - [x] Fluxo de branches: spike integrado à `main` via PR; cada fase em branch própria (`feat/fase-N-...`) com PR para a `main`
-- [x] Job mobile **bloqueante** e executado **a cada commit** junto com API e E2E, conforme o PDF (item 3)
+- [x] Job mobile **bloqueante** e executado **a cada commit** junto com API e E2E, conforme o PDF (item 3) — **a partir da Fase 3**; até lá roda só na `main` e manualmente, para reduzir o tempo de execução
 - [x] Load test **fora do pipeline por commit**: workflow próprio, só manual (`workflow_dispatch`) e agendado; implementado na **última fase**
 - [x] Evidências versionadas na pasta **`evidencias/`** do repositório (artifacts do Actions expiram e o Pages só existe com repo público) — ver seção 5.1
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)

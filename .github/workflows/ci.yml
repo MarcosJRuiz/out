@@ -37,6 +37,10 @@ jobs:
 
   mobile-tests:
     needs: lint
+    # Provisório até a Fase 3: em branches o job é pulado para encurtar o feedback;
+    # roda na main (merge) e manualmente. Na Fase 3 a condição sai e o job volta a
+    # rodar em todo push, como exige o PDF.
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
