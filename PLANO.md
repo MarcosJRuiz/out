@@ -208,7 +208,16 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 - Esperas explícitas (`waitForDisplayed`) / `expect.poll` — o auto-wait do Playwright não se aplica a elementos WebdriverIO.
 - `workers: 1` (um emulador).
 
-**App:** Sauce Labs *My Demo App* (React Native, APK Android, baixado no setup).
+**App:** Sauce Labs *My Demo App* v1.3.0 (React Native, APK Android, baixado no setup). **Somente Android.**
+
+| Tarefa do PDF | No app | Validado? |
+|---|---|---|
+| Abrir o app e navegar | Catálogo "Products" → detalhe do produto → carrinho | Catálogo ✅ no spike; demais telas na Fase 3 |
+| Login | Tela de login (`bob@example.com` / `10203040`) | A confirmar na Fase 3 |
+| Validar elemento | Botão "Add to cart", preço, mensagens | A confirmar na Fase 3 |
+| Preencher e enviar formulário | Endereço de entrega no checkout, com validação de obrigatórios | A confirmar na Fase 3 |
+
+**iOS fora do escopo:** o PDF não exige; exigiria runner macOS (cada minuto conta 10× em repo privado), Xcode, simulador e driver XCUITest. Fica no README como melhoria futura — a arquitetura com Appium permite adicioná-lo trocando as capabilities.
 
 **Tarefa 1:** login → catálogo → detalhe do produto → validar elemento (ex.: botão "Add to cart", mensagem).
 - Negativo (extra): login com credenciais inválidas / campos vazios.
@@ -431,6 +440,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Linguagem: TypeScript; foco em Playwright
 - [x] Cucumber puro (`@cucumber/cucumber`) no E2E
 - [x] Mobile: Appium com Playwright Test como runner (Cypress e Playwright mobile web descartados)
+- [x] App mobile: Sauce Labs My Demo App v1.3.0, **somente Android**; iOS fora do escopo (citado no README como melhoria futura)
 - [x] Site alvo do E2E: AutomationExercise para todos os cenários
 - [x] Destino da navegação na Tarefa 1 do E2E: formulário **Contact Us**, validando também que a sessão continua ativa ("Logged in as <nome>")
 - [x] Plataforma: GitHub — repositório `MarcosJRuiz/out` (nome mantido)
@@ -444,5 +454,4 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
 
 **Pendentes:**
-- [ ] App mobile: Sauce Labs My Demo App (Android) — ok? iOS fora do escopo?
 - [ ] Quando tornar o repo público (sugestão: no fim da Fase 6, antes da entrega)?
