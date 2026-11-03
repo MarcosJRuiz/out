@@ -335,7 +335,9 @@ load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamen
 - Badge de status e link dos relatórios no README.
 - Relatório de execuções do pipeline (exigido no item 3): seção no README com prints/links das execuções.
 
-> O job mobile é o mais lento (~6 min), mas o spike mostrou que é estável. Proposta: obrigatório no pipeline, com `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3.
+> **Decidido:** API, E2E e mobile rodam **a cada commit** e são **bloqueantes** (falha em qualquer um deixa a pipeline vermelha), conforme o item 3 do PDF. O job mobile tem `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3. Exceção intencional: o job `@known-defect` é não bloqueante, pois contém testes que devem falhar.
+>
+> Enquanto o repo for privado (plano Free), não há proteção de branch: "bloqueante" significa pipeline vermelha, sem impedir merge. Ao tornar o repo público, ativar a regra de checks obrigatórios na `main`.
 
 ---
 
@@ -414,7 +416,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | Cartão inválido e endereço incompleto aceitos pelo site (**confirmado**) | Cenários negativos falham | `@known-defect` + bug report + job não bloqueante |
 | Site retorna "under heavy load (queue full)" intermitentemente (**confirmado**) | Flakiness | Retry com backoff na navegação, `workers` baixo, `retry` na CI |
 | Emulador Android lento/instável na CI (**spike aprovado**, ver 4.3) | Pipeline vermelho | KVM, disco liberado, animações desligadas, retries, timeouts, log do Appium/logcat como evidência; plano B: device farm |
-| Repo privado: minutos de CI limitados e sem GitHub Pages | Consumo da cota; relatórios só como artifacts | Rodar o job mobile só quando `mobile/` mudar até o repo ser público; publicar Pages na entrega |
+| Repo privado: minutos de CI limitados e sem GitHub Pages | Consumo da cota (~15 min por push com API + E2E + mobile → ~130 pushes/mês) | Todos os jobs rodam a cada commit (exigência do PDF); acompanhar o consumo; publicar Pages ao tornar o repo público |
 | Versões novas incompatíveis (ex.: driver UiAutomator2 9.x exige Appium 4) | Quebra na instalação | Todas as versões fixadas (`package.json`, `package-lock.json`, scripts) |
 | 500 VUs saturando a máquina geradora (não a API) | Análise distorcida | Monitorar CPU do gerador; documentar recursos; rodar local/manual |
 | Divergência de comportamento do ServeRest (status de método inválido, PUT em id inexistente) | Asserções erradas | Validar na Fase 1 e documentar o comportamento real |
@@ -432,6 +434,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Repo **privado** durante o desenvolvimento
 - [x] PDF da avaliação não versionado; histórico limpo
 - [x] Job mobile viável na CI (spike aprovado)
+- [x] Job mobile **bloqueante** e executado **a cada commit** junto com API e E2E, conforme o PDF (item 3)
 - [x] Load test **fora do pipeline por commit**: workflow próprio, só manual (`workflow_dispatch`) e agendado; implementado na **última fase**
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
 
@@ -439,6 +442,5 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [ ] Formulário de destino da navegação no login: Contact Us — ok?
 - [ ] Estratégia `@known-defect` (cenário esperando o correto + job não bloqueante) para cartão inválido e endereço incompleto — ok?
 - [ ] App mobile: Sauce Labs My Demo App (Android) — ok? iOS fora do escopo?
-- [ ] Job mobile obrigatório (bloqueante) na pipeline?
 - [ ] Branch do spike: abrir PR `spike/mobile-ci` → `main` e seguir a partir dele, ou começar a Fase 0 na `main`?
 - [ ] Quando tornar o repo público (sugestão: no fim da Fase 6, antes da entrega)?
