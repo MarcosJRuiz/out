@@ -5,6 +5,7 @@ test('reconhecimento das telas do My Demo App', async ({ driver }, testInfo) => 
   test.setTimeout(600_000);
 
   const registrar = async (etapa: string) => {
+    await driver.pause(1_500); // deixa a tela estabilizar antes de capturar
     await testInfo.attach(`${etapa}.xml`, {
       body: await driver.getPageSource(),
       contentType: 'application/xml',
@@ -14,68 +15,53 @@ test('reconhecimento das telas do My Demo App', async ({ driver }, testInfo) => 
       contentType: 'image/png',
     });
   };
-  const tocar = async (seletor: string) => {
+  const anotar = (seletor: string, erro: unknown) =>
+    testInfo.annotations.push({
+      type: 'nao-encontrado',
+      description: `${seletor}: ${String(erro).slice(0, 200)}`,
+    });
+  const tocar = async (seletor: string, indice = 0) => {
     try {
-      const el = await driver.$(seletor);
+      const el = (await driver.$$(seletor))[indice];
       await el.waitForDisplayed({ timeout: 15_000 });
       await el.click();
-      return true;
     } catch (erro) {
-      testInfo.annotations.push({
-        type: 'nao-encontrado',
-        description: `${seletor}: ${String(erro).slice(0, 200)}`,
-      });
-      return false;
+      anotar(seletor, erro);
     }
   };
   const digitar = async (seletor: string, texto: string) => {
     try {
-      await (await driver.$(seletor)).setValue(texto);
+      await driver.$(seletor).setValue(texto);
     } catch (erro) {
-      testInfo.annotations.push({
-        type: 'nao-encontrado',
-        description: `${seletor}: ${String(erro).slice(0, 200)}`,
-      });
+      anotar(seletor, erro);
     }
   };
 
-  await (await driver.$('~products screen')).waitForDisplayed({ timeout: 60_000 });
-  await registrar('01-catalogo');
+  await driver.$('~products screen').waitForDisplayed({ timeout: 60_000 });
 
+  // Login com senha incorreta e com senha vazia
   await tocar('~open menu');
-  await registrar('02-menu');
-
   await tocar('~menu item log in');
-  await registrar('03-login');
-
-  await tocar('~Login button');
-  await registrar('04-login-campos-vazios');
-
-  await digitar('~Username input field', 'alice@example.com');
-  await digitar('~Password input field', '10203040');
-  await tocar('~Login button');
-  await registrar('05-login-usuario-bloqueado');
-
   await digitar('~Username input field', 'bob@example.com');
+  await digitar('~Password input field', 'senha-errada');
+  await tocar('~Login button');
+  await registrar('01-login-senha-incorreta');
+  await driver.$('~Password input field').clearValue();
+  await tocar('~Login button');
+  await registrar('02-login-senha-vazia');
   await digitar('~Password input field', '10203040');
   await tocar('~Login button');
-  await registrar('06-apos-login');
+  await registrar('03-apos-login');
 
-  await tocar('~store item');
-  await registrar('07-detalhe-produto');
-
+  // Produto → carrinho → checkout
+  await tocar('~store item', 0);
+  await registrar('04-detalhe-produto');
   await tocar('~Add To Cart button');
-  await registrar('08-adicionado');
-
+  await registrar('05-apos-adicionar');
   await tocar('~cart badge');
-  await registrar('09-carrinho');
-
+  await registrar('06-carrinho');
   await tocar('~Proceed To Checkout button');
-  await registrar('10-checkout-endereco');
-
+  await registrar('07-endereco');
   await tocar('~To Payment button');
-  await registrar('11-endereco-campos-vazios');
-
-  await tocar('~open menu');
-  await registrar('12-menu-logado');
+  await registrar('08-endereco-campos-vazios');
 });
