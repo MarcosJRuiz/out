@@ -10,7 +10,7 @@ Projeto de automação de testes de API, E2E, mobile e carga, com execução con
 .
 ├── api/                  # Testes de API — Playwright Test + ServeRest
 ├── e2e/                  # Testes E2E — Cucumber + Playwright (AutomationExercise)
-├── mobile/               # Testes mobile — Playwright Test + WebdriverIO + Appium
+├── mobile/               # Testes mobile — Playwright Test + WebdriverIO + Appium (My Demo App, Android)
 ├── load/                 # Testes de carga — K6 (em construção)
 ├── docs/bugs/            # Bug reports dos defeitos encontrados
 ├── evidencias/           # Snapshot versionado dos relatórios
@@ -41,7 +41,11 @@ Projeto de automação de testes de API, E2E, mobile e carga, com execução con
 - Node.js 24 (`nvm use`) — o Cucumber não roda no Node 25
 - E2E: navegador do Playwright (`npx playwright install chromium`)
 - Docker com Compose v2 (`docker compose`)
-- Mobile: Android SDK (`ANDROID_HOME`), emulador Android (API 33) e Java (`JAVA_HOME`)
+- Mobile:
+  - Android SDK com `ANDROID_HOME` configurado e `platform-tools` (adb) no `PATH`
+  - Emulador Android API 33 (`system-images;android-33;google_apis;x86_64` ou `arm64-v8a` em Mac Apple Silicon) em execução
+  - Java 17+ com `JAVA_HOME` configurado (usado pelo UiAutomator2)
+  - O servidor Appium é iniciado pelos próprios testes (`mobile/support/global-setup.ts`), não é preciso subi-lo manualmente
 
 ## Instalação
 
@@ -68,9 +72,10 @@ BROWSER=firefox npm run test:e2e         # outro navegador (chromium, firefox ou
 HEADED=1 npm run test:e2e                # com o navegador visível
 
 # Mobile (com emulador Android em execução)
-npm run -w mobile driver:install
-npm run -w mobile app:download
+npm run -w mobile driver:install         # driver UiAutomator2 do Appium (uma vez)
+npm run -w mobile app:download           # APK do My Demo App (uma vez)
 npm run test:mobile
+npx playwright show-report mobile/reports/html
 ```
 
 ## Testes de API
@@ -123,6 +128,21 @@ Cucumber (Gherkin em português) com Playwright como biblioteca, contra o [Autom
 | [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md) | Conta sem endereço (validação só no navegador) chega ao pagamento                  | C6      |
 
 Os cenários `@known-defect` esperam o comportamento correto e por isso falham. Na pipeline rodam em um job separado e não bloqueante; se passarem, o job emite um aviso de que o bug pode ter sido corrigido.
+
+## Testes mobile
+
+Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Test como runner** (fixtures, retries e relatórios iguais aos da API). App: [Sauce Labs My Demo App](https://github.com/saucelabs/my-demo-app-rn) v1.3.0, Android. Screen Objects em `mobile/screens/`.
+
+| Arquivo                         | Cenários                                                                                                                                                                                               | Resultado |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| `login.spec.ts` (Tarefa 1)      | Login válido → catálogo → detalhe do produto (nome, preço e botão **Add To Cart**) → carrinho (contador, produto e total); negativos: senha incorreta, usuário bloqueado, usuário e senha obrigatórios | 5 ✅      |
+| `formulario.spec.ts` (Tarefa 2) | Preenche os 7 campos do endereço, confere cada valor e envia → tela de pagamento; negativo: envio vazio com mensagem em cada campo obrigatório                                                         | 2 ✅      |
+
+- **Locators nativos:** accessibility id (`content-desc`) em todos os elementos, sem XPath; rolagem com `UiScrollable` para campos abaixo da dobra.
+- **Isolamento e tempo:** uma sessão do Appium por execução (abrir sessão custa ~40 s); antes de cada teste o app é limpo (`mobile: clearApp`) e reaberto no catálogo.
+- **Evidências:** screenshot em cada ponto de validação e da tela final de todo teste; XML da tela (page source) nas falhas; log do Appium em `mobile/reports/appium.log`.
+- **Relatórios:** `mobile/reports/html` e resultados Allure em `mobile/reports/allure-results`.
+- **Limitações:** só Android (iOS exigiria runner macOS e driver XCUITest — melhoria futura); o Trace Viewer do Playwright não se aplica a app nativo.
 
 ## Qualidade de código
 
