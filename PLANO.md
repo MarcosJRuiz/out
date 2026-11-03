@@ -1,8 +1,20 @@
 # Plano de Implementação — Avaliação Outsera (Automação de Testes)
 
 > Documento de trabalho para revisarmos ponto a ponto antes de iniciar a implementação.
-> Base: `Avaliação Outsera - Automação de Testes.pdf` · Foco da vaga: **Playwright**
+> Base: `Avaliação Outsera - Automação de Testes.pdf` (não versionado) · Foco da vaga: **Playwright**
 > Local do projeto: `/usr/local/.app/ws/_diversos/out` (raiz do repositório)
+> Repositório: [github.com/MarcosJRuiz/out](https://github.com/MarcosJRuiz/out) — **privado** por enquanto (tornar público na entrega)
+> Última atualização: 03/11/2026 — exploração do E2E concluída e spike mobile na CI aprovado
+
+### Status atual
+
+| Etapa | Status |
+|---|---|
+| Plano e stack | Definidos (pendências na seção 10) |
+| Exploração do site E2E (AutomationExercise) | ✅ Concluída — atende o PDF; 2 defeitos confirmados (seção 4.2) |
+| Spike mobile na CI | ✅ Aprovado — branch `spike/mobile-ci` (seção 4.3) |
+| Repositório | ✅ Criado; histórico limpo sem o PDF |
+| Fases 0 a 6 | ⏳ Não iniciadas |
 
 ---
 
@@ -30,7 +42,7 @@
 | `e2e/` | `@cucumber/cucumber` (puro) | Playwright (biblioteca) | AutomationExercise | Cucumber HTML (screenshots/vídeo/trace) + Allure |
 | `mobile/` | Playwright Test | WebdriverIO (standalone) → Appium 3 + UiAutomator2 | Sauce Labs My Demo App (Android) | Playwright HTML + Allure |
 | `load/` | K6 | — | ServeRest (local, Docker) | K6 Web Dashboard (HTML) + `ANALISE.md` |
-| CI | GitHub Actions | 1 job por módulo | — | Allure consolidado no GitHub Pages + artifacts |
+| CI | GitHub Actions | 1 job por módulo | — | Artifacts por job + Allure consolidado (GitHub Pages quando o repo for público) |
 
 **Linguagem:** TypeScript em todos os módulos (K6 em JavaScript, padrão da ferramenta).
 
@@ -82,7 +94,7 @@ _diversos/out/
 └── README.md
 ```
 
-> ⚠️ **Ponto a avaliar:** o PDF da avaliação está nesta pasta. Sugestão: **não versionar** o PDF (adicionar ao `.gitignore`), pois é material da empresa; o README referencia os requisitos com nossas palavras.
+> **Decidido:** o PDF da avaliação **não é versionado** (`*.pdf` no `.gitignore`) e o histórico do repositório foi reescrito para removê-lo do primeiro commit. O README descreve os requisitos com nossas palavras.
 
 ---
 
@@ -211,35 +223,47 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 | Item | Decisão |
 |---|---|
 | Runner | `ubuntu-latest` com **KVM habilitado** (aceleração de hardware para o emulador). macOS não serve: runners Apple Silicon não rodam emulador Android x86 com aceleração |
-| Emulador | `reactivecircus/android-emulator-runner@v2` — API 33, `google_apis`, `x86_64`, `disable-animations: true`, opções `-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect` |
-| Cache do AVD | `actions/cache` do snapshot do AVD → boot cai de ~3–4 min para ~1 min |
-| Appium | Instalado via npm (`appium` + driver `uiautomator2`, versões fixadas) com cache; servidor iniciado pelo `globalSetup` dos testes (evita a pegadinha do `script` do emulator-runner, que executa cada linha em um shell separado) |
-| App | APK do My Demo App baixado por URL de release fixa + cache |
-| Estabilidade | `appium:uiautomator2ServerInstallTimeout`, `appium:adbExecTimeout` e `newCommandTimeout` maiores; `autoGrantPermissions`; `retries: 1` só na CI; timeout do job (~25 min) |
-| Evidências | Upload como artifact de: relatório, screenshots, page source, **log do Appium** e **logcat** (para diagnosticar falhas só da CI) |
-| Custo | Repositório público → minutos ilimitados em runner padrão |
+| Disco | Passo **"Liberar espaço em disco"** antes do emulador (remove .NET, NDK, Haskell, Swift, CodeQL e imagens Docker) — sem isso o emulador aborta por falta de espaço |
+| Emulador | `reactivecircus/android-emulator-runner@v2` — API 33, `google_apis`, `x86_64`, `cores: 4`, `ram-size: 4096M`, `disk-size: 6000M`, `disable-animations: true`, opções `-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -no-metrics` |
+| Cache do AVD | *A fazer:* `actions/cache` do snapshot do AVD para reduzir o boot (~79 s hoje) |
+| Appium | `appium@3.9.0` como devDependency + driver `appium-uiautomator2-driver@8.7.3` instalado por script (`npm run -w mobile driver:install`); servidor iniciado pelo `globalSetup` dos testes (evita a pegadinha do `script` do emulator-runner, que executa cada linha em um shell separado) |
+| App | APK do My Demo App v1.3.0 baixado por URL de release fixa (`npm run -w mobile app:download`); *a fazer:* cache |
+| Estabilidade | `appium:uiautomator2ServerInstallTimeout` e `appium:adbExecTimeout` = 120 s, `newCommandTimeout` = 240 s; `autoGrantPermissions`; `retries: 1` só na CI; `timeout-minutes: 30` |
+| Evidências | Artifact `mobile-report`: relatório HTML, screenshots, page source (XML) e **log do Appium**; *a fazer:* **logcat** |
+| Custo | Repo **privado** no plano Free → 2.000 min/mês; o job mobile consome ~6 min por execução. Ao tornar público, minutos ilimitados |
+
+Workflow validado no spike (`.github/workflows/ci.yml`, job mobile):
 
 ```yaml
 mobile-tests:
   runs-on: ubuntu-latest
-  timeout-minutes: 25
+  timeout-minutes: 30
   steps:
     - uses: actions/checkout@v4
+    - name: Liberar espaço em disco
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup /usr/share/swift /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
     - name: Habilitar KVM
       run: |
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-        sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
     - uses: actions/setup-node@v4
-      with: { node-version-file: .nvmrc, cache: npm }
-    - run: npm ci -w mobile && npx -w mobile appium driver install uiautomator2
-    - run: npm run -w mobile app:download        # baixa o APK (com cache)
+      with: { node-version-file: .nvmrc }
+    - run: npm ci
+    - run: npm run -w mobile driver:install
+    - run: npm run -w mobile app:download
     - uses: reactivecircus/android-emulator-runner@v2
       with:
         api-level: 33
         target: google_apis
         arch: x86_64
+        cores: 4
+        ram-size: 4096M
+        disk-size: 6000M
         disable-animations: true
-        emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+        emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -no-metrics
         script: npm run -w mobile test:ci      # globalSetup sobe o Appium
     - if: always()
       uses: actions/upload-artifact@v4
@@ -292,11 +316,12 @@ load-test: apenas workflow_dispatch / agendado (não roda a cada commit)
 
 - Cache de npm e dos browsers do Playwright.
 - Relatórios de cada job como **artifacts** + Allure consolidado com histórico no **GitHub Pages**.
+- ⚠️ GitHub Pages **não está disponível em repo privado no plano Free**. Enquanto o repo for privado, os relatórios ficam só como artifacts; o Pages entra quando o repo for tornado público.
 - Job summary (`$GITHUB_STEP_SUMMARY`) com totais por módulo.
 - Badge de status e link dos relatórios no README.
 - Relatório de execuções do pipeline (exigido no item 3): seção no README com prints/links das execuções.
 
-> ⚠️ **Ponto a avaliar:** o job mobile (emulador) é o mais lento e propenso a instabilidade. Proposta: obrigatório no pipeline, com `retries` e timeout ajustados; se ficar instável, documentar.
+> O job mobile é o mais lento (~6 min), mas o spike mostrou que é estável. Proposta: obrigatório no pipeline, com `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3.
 
 ---
 
@@ -316,16 +341,17 @@ load-test: apenas workflow_dispatch / agendado (não roda a cada commit)
 
 ## 7. Fases e estimativas
 
-| Fase | Escopo | Estimativa |
-|---|---|---|
-| 0 | Fundação: monorepo (npm workspaces), lint/prettier, `.nvmrc`, `docker-compose` ServeRest, `.gitignore`, esqueleto README | 0,5 dia |
-| 1 | API (Playwright) | 1,5 dia |
-| 2 | E2E (Cucumber + Playwright) | 2 dias |
-| 3 | Mobile (Appium + Playwright runner) | 1,5 dia |
-| 4 | CI/CD (GitHub Actions + Pages) | 1 dia |
-| 5 | Carga (K6) + análise | 0,5 dia |
-| 6 | README final, revisão geral, pipeline limpa | 0,5 dia |
-| | **Total** | **≈ 7,5 dias** |
+| Fase | Escopo | Estimativa | Status |
+|---|---|---|---|
+| — | Exploração do site E2E + spike mobile na CI | — | ✅ Concluído |
+| 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ⏳ |
+| 1 | API (Playwright) | 1,5 dia | ⏳ |
+| 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
+| 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
+| 4 | CI/CD: jobs de API e E2E, lint, caches, job summary (job mobile já existe) | 0,5 dia | ⏳ |
+| 5 | Carga (K6) + análise | 0,5 dia | ⏳ |
+| 6 | README final, revisão geral, pipeline limpa, tornar o repo público | 0,5 dia | ⏳ |
+| | **Total restante** | **≈ 6,5 dias** | |
 
 Commits seguindo **Conventional Commits**, um conjunto por fase.
 
@@ -356,7 +382,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | Mobile: formulário + envio | `mobile/tests/formulario.spec.ts` |
 | Mobile: locators nativos | accessibility id / resource-id |
 | Mobile: relatório | Playwright HTML + Allure |
-| Projeto no GitHub/GitLab | GitHub |
+| Projeto no GitHub/GitLab | GitHub — `MarcosJRuiz/out` (público na entrega) |
 | Evidências salvas | `reports/` por módulo + artifacts + Pages |
 | README completo | Seção 6 |
 
@@ -371,7 +397,9 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | AutomationExercise com anúncios/pop-ups | Flakiness | Bloquear domínios de ads via `page.route` |
 | Cartão inválido e endereço incompleto aceitos pelo site (**confirmado**) | Cenários negativos falham | `@known-defect` + bug report + job não bloqueante |
 | Site retorna "under heavy load (queue full)" intermitentemente (**confirmado**) | Flakiness | Retry com backoff na navegação, `workers` baixo, `retry` na CI |
-| Emulador Android lento/instável na CI (**spike aprovado**, ver 4.3) | Pipeline vermelho | KVM no runner, snapshot de AVD em cache, animações desligadas, retries, timeouts, logcat/log do Appium como evidência; **spike no início**; plano B: device farm |
+| Emulador Android lento/instável na CI (**spike aprovado**, ver 4.3) | Pipeline vermelho | KVM, disco liberado, animações desligadas, retries, timeouts, log do Appium/logcat como evidência; plano B: device farm |
+| Repo privado: minutos de CI limitados e sem GitHub Pages | Consumo da cota; relatórios só como artifacts | Rodar o job mobile só quando `mobile/` mudar até o repo ser público; publicar Pages na entrega |
+| Versões novas incompatíveis (ex.: driver UiAutomator2 9.x exige Appium 4) | Quebra na instalação | Todas as versões fixadas (`package.json`, `package-lock.json`, scripts) |
 | 500 VUs saturando a máquina geradora (não a API) | Análise distorcida | Monitorar CPU do gerador; documentar recursos; rodar local/manual |
 | Divergência de comportamento do ServeRest (status de método inválido, PUT em id inexistente) | Asserções erradas | Validar na Fase 1 e documentar o comportamento real |
 
@@ -379,15 +407,22 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 
 ## 10. Pontos para avaliarmos / decidir
 
-- [ ] Stack da seção 2 aprovada?
-- [ ] Versionar ou não o PDF da avaliação no repositório? (sugestão: não)
-- [ ] GitHub como plataforma (vs GitLab)?
-- [ ] Nome do repositório (sugestão: `outsera-qa-automation`)?
+**Decididos:**
+- [x] Linguagem: TypeScript; foco em Playwright
+- [x] Cucumber puro (`@cucumber/cucumber`) no E2E
+- [x] Mobile: Appium com Playwright Test como runner (Cypress e Playwright mobile web descartados)
 - [x] Site alvo do E2E: AutomationExercise para todos os cenários
+- [x] Plataforma: GitHub — repositório `MarcosJRuiz/out` (nome mantido)
+- [x] Repo **privado** durante o desenvolvimento
+- [x] PDF da avaliação não versionado; histórico limpo
+- [x] Job mobile viável na CI (spike aprovado)
+
+**Pendentes:**
 - [ ] Formulário de destino da navegação no login: Contact Us — ok?
 - [ ] Estratégia `@known-defect` (cenário esperando o correto + job não bloqueante) para cartão inválido e endereço incompleto — ok?
 - [ ] App mobile: Sauce Labs My Demo App (Android) — ok? iOS fora do escopo?
-- [ ] Job mobile obrigatório na pipeline mesmo com risco de instabilidade?
+- [ ] Job mobile obrigatório (bloqueante) na pipeline?
 - [ ] Load test fora do pipeline por commit (apenas manual/agendado)?
 - [ ] Allure consolidado como relatório principal + relatórios nativos como complemento?
-- [ ] Ordem das fases (mobile antes da CI para a pipeline já nascer completa)?
+- [ ] Branch do spike: abrir PR `spike/mobile-ci` → `main` e seguir a partir dele, ou começar a Fase 0 na `main`?
+- [ ] Quando tornar o repo público (sugestão: na Fase 6, antes da entrega)?
