@@ -14,7 +14,8 @@
 | Exploração do site E2E (AutomationExercise) | ✅ Concluída — atende o PDF; 2 defeitos confirmados (seção 4.2) |
 | Spike mobile na CI | ✅ Aprovado — branch `spike/mobile-ci` (seção 4.3) |
 | Repositório | ✅ Criado; histórico limpo sem o PDF |
-| Fase 0 — Fundação | ✅ Concluída (branch `feat/fase-0-fundacao`) |
+| Fase 0 — Fundação | ✅ Concluída e integrada à `main` (PR #3) |
+| Otimização da CI mobile (cache do emulador) | 🔄 Em validação — branch `ci/cache-emulador` |
 | Fases 1 a 6 | ⏳ Não iniciadas |
 
 ---
@@ -238,16 +239,16 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 | Item | Decisão |
 |---|---|
 | Runner | `ubuntu-latest` com **KVM habilitado** (aceleração de hardware para o emulador). macOS não serve: runners Apple Silicon não rodam emulador Android x86 com aceleração |
-| Disco | Passo **"Liberar espaço em disco"** antes do emulador (remove .NET, NDK, Haskell, Swift, CodeQL e imagens Docker) — sem isso o emulador aborta por falta de espaço |
+| Disco | Passo **"Liberar espaço em disco"** antes do emulador (remove .NET, NDK, Haskell, Swift e CodeQL) — sem isso o emulador aborta por falta de espaço. A limpeza de imagens Docker foi removida (era a parte mais lenta, ~25 s) |
 | Emulador | `reactivecircus/android-emulator-runner@v2` — API 33, `google_apis`, `x86_64`, `cores: 4`, `ram-size: 4096M`, `disk-size: 6000M`, `disable-animations: true`, opções `-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -no-metrics` |
-| Cache do AVD | *A fazer:* `actions/cache` do snapshot do AVD para reduzir o boot (~79 s hoje) |
+| Cache do emulador | `actions/cache` da imagem do sistema (`system-images/android-33`) e do AVD com snapshot já inicializado. Sem cache, um passo extra cria o snapshot e o salva; com cache, o emulador restaura do snapshot (`force-avd-creation: false`) e o teste roda com `-no-snapshot-save` para não alterar o cache. Chave: `avd-v1-api33-google_apis-x86_64-4c-4096M-6000M` (trocar a versão `v1` para invalidar) |
 | Appium | `appium@3.9.0` como devDependency + driver `appium-uiautomator2-driver@8.7.3` instalado por script (`npm run -w mobile driver:install`); servidor iniciado pelo `globalSetup` dos testes (evita a pegadinha do `script` do emulator-runner, que executa cada linha em um shell separado) |
 | App | APK do My Demo App v1.3.0 baixado por URL de release fixa (`npm run -w mobile app:download`); *a fazer:* cache |
 | Estabilidade | `appium:uiautomator2ServerInstallTimeout` e `appium:adbExecTimeout` = 120 s, `newCommandTimeout` = 240 s; `autoGrantPermissions`; `retries: 1` só na CI; `timeout-minutes: 30` |
 | Evidências | Artifact `mobile-report`: relatório HTML, screenshots, page source (XML) e **log do Appium**; *a fazer:* **logcat** |
 | Custo | Repo **privado** no plano Free → 2.000 min/mês; o job mobile consome ~6 min por execução. Ao tornar público, minutos ilimitados |
 
-Workflow validado no spike (`.github/workflows/ci.yml`, job mobile):
+Workflow validado no spike (`.github/workflows/ci.yml`, job mobile). *Versão sem cache — a versão atual, com o cache do emulador, está no próprio arquivo:*
 
 ```yaml
 mobile-tests:
@@ -300,7 +301,25 @@ Problemas encontrados e corrigidos no spike:
 1. `appium-uiautomator2-driver@9.x` exige Appium 4 (beta) → fixado em **8.7.3**, última versão compatível com Appium 3.
 2. Emulador abortou com *"Not enough space to create userdata partition"* (3,5 GB livres, precisa de 7,3 GB) → passo **"Liberar espaço em disco"** no workflow + `disk-size: 6000M`, `cores: 4`, `ram-size: 4096M`.
 
-Próximos ajustes no job: cache do AVD e do driver Appium; upload do logcat.
+**Otimização de tempo do job mobile (cache do emulador):**
+
+Medição da execução sem cache (5m46s no total):
+
+| Etapa | Tempo |
+|---|---|
+| Lint | 17 s |
+| Liberar espaço em disco | 37 s |
+| Node, dependências, driver Appium e APK | 16 s |
+| Baixar imagem do Android 13 e ferramentas do SDK | **2m14s** |
+| Boot do emulador | **1m09s** |
+| Teste (instala app + servidor Appium e executa) | 54 s |
+
+- Gargalo: a cada execução a máquina começa do zero — baixa a imagem do Android e faz boot a frio (~3m20s, mais da metade do tempo).
+- Solução: cache da imagem e do snapshot do emulador + limpeza de disco sem a etapa de Docker.
+- Meta: **de ~5m45s para ~2m30s–3m** por execução (a primeira execução após a mudança continua lenta, pois cria o cache).
+- Status: 🔄 em validação no branch `ci/cache-emulador` (resultado a registrar aqui).
+
+Próximos ajustes no job: upload do logcat.
 
 ---
 
@@ -414,7 +433,7 @@ evidencias/
 | 1 | API (Playwright) | 1,5 dia | ⏳ |
 | 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
 | 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
-| 4 | CI/CD: jobs de API e E2E, lint, caches, job summary (job mobile já existe) | 0,5 dia | ⏳ |
+| 4 | CI/CD: jobs de API e E2E, job `@known-defect`, Allure consolidado, job summary (lint, cache do npm e cache do emulador já antecipados) | 0,5 dia | ⏳ |
 | 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
 | 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
 | | **Total restante** | **≈ 6,5 dias** | |
