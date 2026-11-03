@@ -15,7 +15,8 @@
 | Spike mobile na CI | ✅ Aprovado — branch `spike/mobile-ci` (seção 4.3) |
 | Repositório | ✅ Criado; histórico limpo sem o PDF |
 | Fase 0 — Fundação | ✅ Concluída (branch `feat/fase-0-fundacao`) |
-| Fases 1 a 6 | ⏳ Não iniciadas |
+| Fase 1 — API | ✅ Concluída (branch `feat/fase-1-api`): 57 testes, estáveis em execução repetida |
+| Fases 2 a 6 | ⏳ Não iniciadas |
 
 ---
 
@@ -128,6 +129,12 @@ _diversos/out/
 | Método inválido | — | `PATCH /usuarios`, `DELETE /login` → **405** com mensagem "Não é possível realizar ..." (validado na Fase 0) |
 
 **Relatório:** Playwright HTML + Allure, com request/response anexados em falhas.
+
+**Resultado da Fase 1:** 57 testes (login 7, usuários 16, produtos 17, carrinhos 9, métodos/payload 8), sendo 37 negativos; 171/171 aprovados com `--repeat-each=3` em paralelo; a massa criada é removida ao final (sobram apenas os dados iniciais do ServeRest).
+
+**Achados registrados no README:**
+- JSON malformado → resposta **sem CORS e sem headers de segurança** (todas as outras respostas trazem); o teste verifica a ausência e registra anotação `achado` no relatório.
+- `PUT` com id inexistente cria o registro (201); `DELETE` de id inexistente → 200 "Nenhum registro excluído"; `concluir-compra` sem carrinho → 200 com mensagem de ausência.
 
 ---
 
@@ -411,7 +418,7 @@ evidencias/
 |---|---|---|---|
 | — | Exploração do site E2E + spike mobile na CI | — | ✅ Concluído |
 | 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ✅ |
-| 1 | API (Playwright) | 1,5 dia | ⏳ |
+| 1 | API (Playwright) + job `api-tests` na CI (antecipado da Fase 4) | 1,5 dia | ✅ |
 | 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
 | 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
 | 4 | CI/CD: jobs de API e E2E, lint, caches, job summary (job mobile já existe) | 0,5 dia | ⏳ |

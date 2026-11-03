@@ -8,7 +8,7 @@ Projeto de automação de testes de API, E2E, mobile e carga, com execução con
 
 ```
 .
-├── api/                  # Testes de API — Playwright Test + ServeRest (em construção)
+├── api/                  # Testes de API — Playwright Test + ServeRest
 ├── e2e/                  # Testes E2E — Cucumber + Playwright (em construção)
 ├── mobile/               # Testes mobile — Playwright Test + WebdriverIO + Appium
 ├── load/                 # Testes de carga — K6 (em construção)
@@ -24,6 +24,9 @@ Projeto de automação de testes de API, E2E, mobile e carga, com execução con
 | Node.js             | 24 (LTS)         |
 | TypeScript          | 6.0.3            |
 | Playwright Test     | 1.64.1           |
+| Zod (contratos)     | 4.6.7            |
+| Faker               | 10.6.0           |
+| Allure Playwright   | 3.14.0           |
 | WebdriverIO         | 10.1.0           |
 | Appium              | 3.9.0            |
 | Driver UiAutomator2 | 8.7.3            |
@@ -49,11 +52,43 @@ npm ci
 npm run serverest:up
 npm run serverest:down
 
+# API (com o ServeRest no ar; ajuste SERVEREST_URL se não usar a porta 3000)
+npm run test:api
+SERVEREST_URL=http://localhost:3001 npm run test:api
+npm run report -w api        # abre o relatório HTML
+
 # Mobile (com emulador Android em execução)
 npm run -w mobile driver:install
 npm run -w mobile app:download
 npm run test:mobile
 ```
+
+## Testes de API
+
+Playwright Test (`APIRequestContext`) contra o [ServeRest](https://serverest.dev) local. 57 testes em 5 arquivos:
+
+| Arquivo                | Escopo                                                  | Testes |
+| ---------------------- | ------------------------------------------------------- | ------ |
+| `login.spec.ts`        | `POST /login`                                           | 7      |
+| `usuarios.spec.ts`     | `GET/POST/PUT/DELETE /usuarios`                         | 16     |
+| `produtos.spec.ts`     | `GET/POST/PUT/DELETE /produtos` (autenticação e perfil) | 17     |
+| `carrinhos.spec.ts`    | `/carrinhos`, concluir e cancelar compra, estoque       | 9      |
+| `metodos-http.spec.ts` | Métodos não suportados (405) e JSON malformado          | 8      |
+
+- Toda resposta é validada em **status code, headers e corpo** (`support/assertions.ts`), com o contrato do corpo verificado por schemas Zod (`schemas/`).
+- Cada teste cria e remove a própria massa pela API (`fixtures/massa.ts`), então os testes são independentes e rodam em paralelo.
+- Tags: `@smoke`, `@negative` (37 testes) e `@contract`. Ex.: `npx playwright test --grep @negative` dentro de `api/`.
+- Em falhas, as requisições e respostas do teste são anexadas ao relatório (`requisicoes-http.json`).
+- Relatórios: HTML em `api/reports/html` e resultados Allure em `api/reports/allure-results`.
+
+### Achados
+
+| Comportamento observado                                                                                               | Observação                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Resposta a JSON malformado vem **sem CORS e sem headers de segurança** (`x-content-type-options`, `x-frame-options`)  | Todas as outras respostas trazem esses headers; o teste verifica a ausência e registra o achado no relatório |
+| `PUT /usuarios/{id}` com id inexistente **cria** um usuário (201)                                                     | Comportamento documentado do ServeRest (upsert)                                                              |
+| `DELETE` de id inexistente responde **200** "Nenhum registro excluído"                                                | Idempotente, sem erro                                                                                        |
+| `DELETE /carrinhos/concluir-compra` sem carrinho responde **200** com "Não foi encontrado carrinho para esse usuário" | Sucesso com mensagem de ausência, em vez de 404                                                              |
 
 ## Qualidade de código
 

@@ -2,6 +2,7 @@
   "name": "outsera-qa-automation",
   "private": true,
   "workspaces": [
+    "api",
     "mobile"
   ],
   "engines": {
@@ -15,7 +16,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "serverest:up": "docker compose up -d --wait serverest",
     "serverest:down": "docker compose down",
-    "test:mobile": "npm run test -w mobile"
+    "test:mobile": "npm run test -w mobile",
+    "test:api": "npm run test -w api"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
