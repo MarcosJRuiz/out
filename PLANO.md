@@ -28,7 +28,7 @@
 |---|---|---|---|---|
 | `api/` | Playwright Test | `APIRequestContext` | ServeRest (local, Docker) | Playwright HTML + Allure |
 | `e2e/` | `@cucumber/cucumber` (puro) | Playwright (biblioteca) | AutomationExercise | Cucumber HTML (screenshots/vídeo/trace) + Allure |
-| `mobile/` | Playwright Test | WebdriverIO (standalone) → Appium 2 + UiAutomator2 | Sauce Labs My Demo App (Android) | Playwright HTML + Allure |
+| `mobile/` | Playwright Test | WebdriverIO (standalone) → Appium 3 + UiAutomator2 | Sauce Labs My Demo App (Android) | Playwright HTML + Allure |
 | `load/` | K6 | — | ServeRest (local, Docker) | K6 Web Dashboard (HTML) + `ANALISE.md` |
 | CI | GitHub Actions | 1 job por módulo | — | Allure consolidado no GitHub Pages + artifacts |
 
@@ -184,7 +184,7 @@ _diversos/out/
 
 **Arquitetura:**
 ```
-Playwright Test (runner) → webdriverio remote() → Appium 2 → UiAutomator2 → App Android
+Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 → App Android
 ```
 
 **Padrões:**
@@ -248,7 +248,20 @@ mobile-tests:
 
 **Plano B** (se o emulador na CI se mostrar instável): rodar o job contra um device farm (BrowserStack/Sauce Labs, plano trial/open source) apenas trocando as capabilities, ou manter o job com `continue-on-error` e documentar.
 
-**Mitigação de risco:** fazer um **spike** (prova de conceito) do job mobile logo no início — workflow mínimo que sobe emulador + Appium + abre o app e valida um elemento — antes de investir nos cenários.
+**Spike realizado em 03/11/2026 — ✅ APROVADO** (branch `spike/mobile-ci`, [run 41633566054](https://github.com/MarcosJRuiz/out/actions/runs/41633566054)):
+
+| Item | Resultado |
+|---|---|
+| Versões validadas | Node 24 · Appium **3.9.0** · `appium-uiautomator2-driver` **8.7.3** · WebdriverIO 10.1.0 · Playwright Test 1.64.1 · emulador API 33 `google_apis` x86_64 · My Demo App v1.3.0 |
+| Tempo do job | **~6 min** no total (boot do emulador ~79 s; teste 45 s) — sem cache de AVD ainda |
+| Resultado | App abriu no catálogo "Products"; teste passou de primeira (sem retry) |
+| Locators | App expõe **accessibility ids** (`products screen`, `store item`, `store item text`, `store item price`, `open menu`, `cart badge`, `sort button`) → locators nativos sem XPath |
+
+Problemas encontrados e corrigidos no spike:
+1. `appium-uiautomator2-driver@9.x` exige Appium 4 (beta) → fixado em **8.7.3**, última versão compatível com Appium 3.
+2. Emulador abortou com *"Not enough space to create userdata partition"* (3,5 GB livres, precisa de 7,3 GB) → passo **"Liberar espaço em disco"** no workflow + `disk-size: 6000M`, `cores: 4`, `ram-size: 4096M`.
+
+Próximos ajustes no job: cache do AVD e do driver Appium; upload do logcat.
 
 ---
 
@@ -358,7 +371,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | AutomationExercise com anúncios/pop-ups | Flakiness | Bloquear domínios de ads via `page.route` |
 | Cartão inválido e endereço incompleto aceitos pelo site (**confirmado**) | Cenários negativos falham | `@known-defect` + bug report + job não bloqueante |
 | Site retorna "under heavy load (queue full)" intermitentemente (**confirmado**) | Flakiness | Retry com backoff na navegação, `workers` baixo, `retry` na CI |
-| Emulador Android lento/instável na CI | Pipeline vermelho | KVM no runner, snapshot de AVD em cache, animações desligadas, retries, timeouts, logcat/log do Appium como evidência; **spike no início**; plano B: device farm |
+| Emulador Android lento/instável na CI (**spike aprovado**, ver 4.3) | Pipeline vermelho | KVM no runner, snapshot de AVD em cache, animações desligadas, retries, timeouts, logcat/log do Appium como evidência; **spike no início**; plano B: device farm |
 | 500 VUs saturando a máquina geradora (não a API) | Análise distorcida | Monitorar CPU do gerador; documentar recursos; rodar local/manual |
 | Divergência de comportamento do ServeRest (status de método inválido, PUT em id inexistente) | Asserções erradas | Validar na Fase 1 e documentar o comportamento real |
 
