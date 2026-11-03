@@ -39,6 +39,8 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      ANDROID_API_LEVEL: 33
     steps:
       - uses: actions/checkout@v4
 
@@ -46,7 +48,6 @@ jobs:
       - name: Liberar espaço em disco
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup /usr/share/swift /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force
           df -h /
 
       - name: Habilitar KVM
@@ -69,15 +70,43 @@ jobs:
       - name: Baixar APK
         run: npm run -w mobile app:download
 
-      - name: Executar testes mobile no emulador
+      # Cache da imagem do Android e do snapshot do emulador já inicializado:
+      # evita baixar a imagem (~2 min) e fazer boot a frio (~1 min) a cada execução.
+      - name: Cache do emulador Android
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+            /usr/local/lib/android/sdk/system-images/android-${{ env.ANDROID_API_LEVEL }}
+          key: avd-v1-api${{ env.ANDROID_API_LEVEL }}-google_apis-x86_64-4c-4096M-6000M
+
+      - name: Criar snapshot do emulador (somente sem cache)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
+          api-level: ${{ env.ANDROID_API_LEVEL }}
           target: google_apis
           arch: x86_64
           cores: 4
           ram-size: 4096M
           disk-size: 6000M
+          force-avd-creation: false
+          disable-animations: false
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-metrics
+          script: echo "Snapshot do emulador gerado para o cache."
+
+      - name: Executar testes mobile no emulador
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.ANDROID_API_LEVEL }}
+          target: google_apis
+          arch: x86_64
+          cores: 4
+          ram-size: 4096M
+          disk-size: 6000M
+          force-avd-creation: false
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -no-metrics
           script: npm run -w mobile test:ci
