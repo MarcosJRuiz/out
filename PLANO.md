@@ -20,7 +20,8 @@
 | Fase 2 — E2E | ✅ Concluída (branch `feat/fase-2-e2e`): 11 cenários aprovados (3 execuções seguidas) + 2 `@known-defect` falhando como esperado |
 | Fase 3 — Mobile | ✅ Concluída (branch `feat/fase-3-mobile`): 7 testes aprovados na CI sem retry; job mobile reativado em todo push |
 | Fase 4 — CI/CD | ✅ Concluída (branch `feat/fase-4-ci`): job `publish-reports` com Allure consolidado e resumo da execução |
-| Fases 5 e 6 | ⏳ Não iniciadas |
+| Fase 5 — Fechamento | ✅ Concluída (branch `feat/fase-5-fechamento`): `evidencias/` gerada da pipeline da `main`, README final → **escopo obrigatório entregue** |
+| Fase 6 — Carga (opcional) | ⏳ Não iniciada |
 
 ---
 
@@ -428,32 +429,21 @@ load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamen
 
 Atende à observação do PDF **"Salvar evidências do teste (report)"** de forma permanente, sem depender de artifacts (expiram) nem do GitHub Pages (só com repo público).
 
-**Estrutura:**
+**Estrutura (implementada na Fase 5):**
 ```
 evidencias/
-├── README.md                    # índice: data, commit, link da execução da pipeline, resumo (total/passou/falhou por módulo)
-├── allure-report.html           # Allure consolidado (API + E2E + mobile), arquivo único
-├── api/
-│   └── playwright-report.html   # relatório nativo
-├── e2e/
-│   ├── cucumber-report.html     # relatório nativo
-│   └── screenshots/             # evidências dos cenários, incl. negativos e @known-defect
-├── mobile/
-│   ├── playwright-report.html
-│   └── screenshots/
+├── README.md               # índice: data, commit, link da execução e resumo por módulo
+├── allure-report.html      # Allure consolidado (API + E2E + mobile), arquivo único (~17 MB)
 ├── pipeline/
-│   └── execucoes.md             # links e prints das execuções do GitHub Actions (item 3 do PDF)
-└── load/                        # Fase 6
-    ├── k6-dashboard.html
-    └── resumo.json
+│   └── execucoes.md        # jobs da execução de referência (resultado, duração, log) e histórico da main
+└── load/                   # Fase 6 (opcional)
 ```
 
 **Regras:**
-- A pasta é criada na Fase 0 (com o `README.md` de índice) e preenchida na **Fase 5** (escopo obrigatório) e na **Fase 6** (carga).
-- O conteúdo vem dos **artifacts da execução da pipeline do commit final** — rastreável a uma execução real, não a uma rodada local.
-- Script `npm run evidencias:snapshot` baixa os artifacts da execução (`gh run download`) e organiza na estrutura acima.
-- Tamanho controlado: relatórios em HTML único e screenshots; **vídeos e traces ficam só nos artifacts** (pesados), exceto dos cenários `@known-defect`, que entram como prova dos bugs.
-- Não conflita com o `.gitignore`: os relatórios locais (`**/reports/`) continuam ignorados; só `evidencias/` é versionada.
+- O conteúdo vem do artifact `relatorio-consolidado` da **última execução bem-sucedida da pipeline na `main`** — rastreável a uma execução real, não a uma rodada local.
+- `npm run evidencias` (`scripts/evidencias-snapshot.mjs`, usa o GitHub CLI) baixa o artifact e gera os arquivos acima; pode receber o id de uma execução específica.
+- **Ajuste em relação ao planejado:** em vez de copiar também os relatórios nativos (Playwright, Cucumber com vídeos, traces — ~35 MB a mais), a pasta guarda só o Allure consolidado, que já reúne os passos, screenshots, requisições HTTP e os vídeos dos defeitos conhecidos. Os nativos continuam nos artifacts de cada execução.
+- Os relatórios locais (`**/reports/`) continuam ignorados pelo git; só `evidencias/` é versionada.
 
 > **Decidido:** API, E2E e mobile rodam **a cada commit** e são **bloqueantes** (falha em qualquer um deixa a pipeline vermelha), conforme o item 3 do PDF. O job mobile tem `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3. Exceção intencional: o job `@known-defect` é não bloqueante, pois contém testes que devem falhar.
 >
@@ -488,7 +478,7 @@ evidencias/
 | 2 | E2E (Cucumber + Playwright) + jobs `e2e-tests` e `e2e-known-defects` na CI (antecipados da Fase 4) | 2 dias | ✅ |
 | 3 | Mobile (Appium + Playwright runner) + job `mobile-tests` reativado em todo push (sem a condição de branch) | 1 dia | ✅ |
 | 4 | CI/CD: job `publish-reports` (Allure 3 consolidado em HTML único + resumo no `$GITHUB_STEP_SUMMARY`), documentação da pipeline no README (demais jobs antecipados nas Fases 0–3) | 0,5 dia | ✅ |
-| 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
+| 5 | README final (resumo, estrutura por módulo, cobertura dos requisitos, decisões, limitações), `npm run evidencias` + `evidencias/` gerada da pipeline da `main` → **escopo obrigatório entregue** | 0,5 dia | ✅ |
 | 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
 | | **Total restante** | **≈ 6,5 dias** | |
 
@@ -526,8 +516,8 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | Mobile: configuração do ambiente (critério de avaliação) | README: Android SDK, emulador, Appium/driver, variáveis (`ANDROID_HOME`, `JAVA_HOME`) |
 | Mobile: relatório | Playwright HTML + Allure |
 | Projeto no GitHub/GitLab | GitHub — `MarcosJRuiz/out` (**precisa estar acessível ao avaliador na entrega**) |
-| Evidências salvas | **`evidencias/` versionada** (seção 5.1) + artifacts por execução + Pages quando público |
-| README completo | Seção 6 |
+| Evidências salvas | **`evidencias/` versionada** (seção 5.1): Allure consolidado + resumo + execuções da pipeline; artifacts por execução |
+| README completo | `README.md`: descrição, estrutura, versões, pré-requisitos e instalação, execução e relatórios por módulo, pipeline, cobertura dos requisitos, decisões e limitações |
 
 ---
 

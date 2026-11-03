@@ -20,7 +20,8 @@
     "test:mobile": "npm run test -w mobile",
     "test:api": "npm run test -w api",
     "test:e2e": "npm run test -w e2e",
-    "relatorio": "node scripts/relatorio-consolidado.mjs API=api/reports/allure-results E2E=e2e/reports/allure-results Mobile=mobile/reports/allure-results && allure generate reports/allure-results"
+    "relatorio": "node scripts/relatorio-consolidado.mjs API=api/reports/allure-results E2E=e2e/reports/allure-results Mobile=mobile/reports/allure-results && allure generate reports/allure-results",
+    "evidencias": "node scripts/evidencias-snapshot.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
