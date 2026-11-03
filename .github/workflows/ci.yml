@@ -1,13 +1,14 @@
 name: CI
 
+# Roda a cada commit em qualquer branch; os checks do commit aparecem no PR,
+# então pull_request não é necessário (evita execuções duplicadas).
 on:
   push:
-  pull_request:
   workflow_dispatch:
 
-# Push e pull_request do mesmo branch caem no mesmo grupo: só a execução mais recente continua.
+# Um novo push no mesmo branch cancela a execução anterior, ainda em andamento.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:

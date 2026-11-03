@@ -319,7 +319,7 @@ Próximos ajustes no job: cache do AVD e do driver Appium; upload do logcat.
 
 ## 5. CI/CD — GitHub Actions
 
-Gatilhos: `push` (todas as branches — atende "após cada commit"), `pull_request` para a `main` e `workflow_dispatch`.
+Gatilhos: `push` (todas as branches — atende "após cada commit"; os checks aparecem no PR pelo commit) e `workflow_dispatch`. Sem `pull_request`, para não duplicar execuções. `concurrency` cancela a execução anterior quando há novo push no mesmo branch.
 
 > E2E roda só em **Chromium** a cada commit: o PDF não exige multi-browser e o AutomationExercise já apresenta instabilidade ("queue full"); dobrar o tráfego com Firefox aumentaria o risco de falsos negativos. Multi-browser fica disponível localmente via `BROWSER=`.
 
