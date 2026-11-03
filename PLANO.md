@@ -15,7 +15,7 @@
 | Spike mobile na CI | ✅ Aprovado — branch `spike/mobile-ci` (seção 4.3) |
 | Repositório | ✅ Criado; histórico limpo sem o PDF |
 | Fase 0 — Fundação | ✅ Concluída e integrada à `main` (PR #3) |
-| Otimização da CI mobile (cache do emulador) | 🔄 Em validação — branch `ci/cache-emulador` |
+| Otimização da CI mobile | ✅ Cache do emulador testado e **descartado**; adotada a regra "mobile só na `main` até a Fase 3" (seção 4.3) |
 | Fases 1 a 6 | ⏳ Não iniciadas |
 
 ---
@@ -241,7 +241,7 @@ Playwright Test (runner) → webdriverio remote() → Appium 3 → UiAutomator2 
 | Runner | `ubuntu-latest` com **KVM habilitado** (aceleração de hardware para o emulador). macOS não serve: runners Apple Silicon não rodam emulador Android x86 com aceleração |
 | Disco | Passo **"Liberar espaço em disco"** antes do emulador (remove .NET, NDK, Haskell, Swift e CodeQL) — sem isso o emulador aborta por falta de espaço. A limpeza de imagens Docker foi removida (era a parte mais lenta, ~25 s) |
 | Emulador | `reactivecircus/android-emulator-runner@v2` — API 33, `google_apis`, `x86_64`, `cores: 4`, `ram-size: 4096M`, `disk-size: 6000M`, `disable-animations: true`, opções `-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -no-metrics` |
-| Cache do emulador | `actions/cache` da imagem do sistema (`system-images/android-33`) e do AVD com snapshot já inicializado. Sem cache, um passo extra cria o snapshot e o salva; com cache, o emulador restaura do snapshot (`force-avd-creation: false`) e o teste roda com `-no-snapshot-save` para não alterar o cache. Chave: `avd-v1-api33-google_apis-x86_64-4c-4096M-6000M` (trocar a versão `v1` para invalidar) |
+| Cache do emulador | **Testado e descartado** (ver "Otimização de tempo do job mobile" abaixo): restaurar 3,8 GB era mais lento que baixar a imagem, e o snapshot restaurado não carregava |
 | Appium | `appium@3.9.0` como devDependency + driver `appium-uiautomator2-driver@8.7.3` instalado por script (`npm run -w mobile driver:install`); servidor iniciado pelo `globalSetup` dos testes (evita a pegadinha do `script` do emulator-runner, que executa cada linha em um shell separado) |
 | App | APK do My Demo App v1.3.0 baixado por URL de release fixa (`npm run -w mobile app:download`); *a fazer:* cache |
 | Estabilidade | `appium:uiautomator2ServerInstallTimeout` e `appium:adbExecTimeout` = 120 s, `newCommandTimeout` = 240 s; `autoGrantPermissions`; `retries: 1` só na CI; `timeout-minutes: 30` |
@@ -315,9 +315,16 @@ Medição da execução sem cache (5m46s no total):
 | Teste (instala app + servidor Appium e executa) | 54 s |
 
 - Gargalo: a cada execução a máquina começa do zero — baixa a imagem do Android e faz boot a frio (~3m20s, mais da metade do tempo).
-- Solução: cache da imagem e do snapshot do emulador + limpeza de disco sem a etapa de Docker.
-- Meta: **de ~5m45s para ~2m30s–3m** por execução (a primeira execução após a mudança continua lenta, pois cria o cache).
-- Status: 🔄 em validação no branch `ci/cache-emulador` (resultado a registrar aqui).
+- **Tentativa 1 — cache da imagem e do snapshot do emulador: descartada.**
+
+  | Execução | Resultado |
+  |---|---|
+  | 1ª (cria o cache) | 8m37s, cache de **3,8 GB** |
+  | 2ª (usa o cache) | ❌ **Mais lenta e falhou**: restaurar o cache levou **3m22s** (baixar a imagem leva 2m14s); o snapshot não carregou (*"The emulator hardware cannot load snapshot"*), o emulador fez boot a frio e o app não abriu no AVD restaurado |
+
+  Conclusão: no runner gratuito, o cache do emulador custa mais do que economiza. Cache removido.
+- **Ajuste mantido:** limpeza de disco sem a etapa de imagens Docker (37 s → 23 s).
+- **Solução adotada para o tempo de feedback:** até a Fase 3, o job mobile não roda nos pushes de branches (só na `main` e manualmente) — ver seção 5. Push em branch passa a levar ~20 s a 1 min.
 
 Próximos ajustes no job: upload do logcat.
 
