@@ -1,12 +1,13 @@
 # Outsera — Automação de Testes
 
-Projeto de automação de testes de **API**, **E2E** e **mobile**, com execução a cada commit no GitHub Actions, relatório consolidado e evidências versionadas.
+Projeto de automação de testes de **API**, **E2E**, **mobile** e **carga**, com execução a cada commit no GitHub Actions, relatório consolidado e evidências versionadas.
 
 | Módulo | Ferramentas                            | Aplicação testada                                                    | Testes                     |
 | ------ | -------------------------------------- | -------------------------------------------------------------------- | -------------------------- |
 | API    | Playwright Test                        | [ServeRest](https://serverest.dev) (local, Docker)                   | 60                         |
 | E2E    | Cucumber + Playwright                  | [AutomationExercise](https://automationexercise.com)                 | 11 + 2 defeitos conhecidos |
 | Mobile | Appium + WebdriverIO + Playwright Test | [My Demo App](https://github.com/saucelabs/my-demo-app-rn) (Android) | 7                          |
+| Carga  | k6                                     | ServeRest (local, Docker)                                            | 500 usuários por 5 min     |
 | CI/CD  | GitHub Actions                         | —                                                                    | 6 jobs                     |
 
 **Resultado atual:** 80 testes — 78 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências em [`evidencias/`](evidencias/).
@@ -18,7 +19,7 @@ Projeto de automação de testes de **API**, **E2E** e **mobile**, com execuçã
 ├── api/                  # Testes de API — Playwright Test + ServeRest
 ├── e2e/                  # Testes E2E — Cucumber + Playwright (AutomationExercise)
 ├── mobile/               # Testes mobile — Playwright Test + WebdriverIO + Appium (My Demo App, Android)
-├── load/                 # Testes de carga — K6 (opcional, planejado)
+├── load/                 # Teste de carga — k6 (script, resumo e ANALISE.md)
 ├── docs/bugs/            # Bug reports dos defeitos encontrados
 ├── evidencias/           # Snapshot versionado dos relatórios
 ├── scripts/              # Relatório consolidado (Allure + resumo) e snapshot das evidências
@@ -56,6 +57,7 @@ api/                               e2e/                               mobile/
 | Appium                       | 3.9.0            |
 | Driver UiAutomator2          | 8.7.3            |
 | ServeRest (Docker)           | 3.2.2            |
+| k6                           | 2.3.0            |
 | ESLint / Prettier            | 10.14.0 / 3.9.10 |
 
 ## Pré-requisitos
@@ -170,6 +172,26 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 - **Relatórios:** `mobile/reports/html` e resultados Allure em `mobile/reports/allure-results`.
 - **Limitações:** só Android (iOS exigiria runner macOS e driver XCUITest — melhoria futura); o Trace Viewer do Playwright não se aplica a app nativo.
 
+## Teste de carga
+
+[k6](https://k6.io) contra o ServeRest: **500 usuários simultâneos por 5 minutos** (rampa de 30 s, patamar de 5 min, descida de 30 s). Cada usuário faz login, lista os produtos e consulta um produto, com 1 s de pausa entre as ações.
+
+| Resultado (CI, 2 vCPUs) | Valor               | Critério        |
+| ----------------------- | ------------------- | --------------- |
+| Requisições / vazão     | 165.015 / 455 req/s | —               |
+| Taxa de erro            | 0,00%               | < 1% ✅         |
+| Checks                  | 100%                | > 99% ✅        |
+| p95 / p99               | 13 ms / 30 ms       | p95 < 500 ms ✅ |
+
+- **Estresse complementar** (mesmos 500 usuários, sem pausa): a vazão para em ~450 req/s, o p95 sobe para 940 ms e surgem timeouts no login — o gargalo é a **CPU do processo único do ServeRest**. Análise completa, gargalos e recomendações em [`load/ANALISE.md`](load/ANALISE.md).
+- **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários, duração e pausa configuráveis), toda segunda-feira e quando o teste de carga muda.
+- **Relatórios:** dashboard HTML do k6 (gráficos ao longo do tempo), resumo JSON e tabela de métricas no resumo da execução. Evidências em [`evidencias/load/`](evidencias/load/).
+
+```bash
+npm run test:carga                                 # 500 usuários por 5 min (Docker: ServeRest + k6)
+VUS=500 PATAMAR=2m PAUSA=0 npm run test:carga      # estresse, sem pausa entre as ações
+```
+
 ## Qualidade de código
 
 ```bash
@@ -209,11 +231,11 @@ lint ──┬─> api-tests            ServeRest como container de serviço    
 
 ## Relatórios e evidências
 
-| Onde                                      | O quê                                                                                                                                                               |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`evidencias/`](evidencias/)              | **Snapshot versionado:** relatório Allure consolidado (`allure-report.html`, abre direto no navegador), resumo dos resultados e relatório das execuções da pipeline |
-| Página de cada execução no GitHub Actions | Resumo por módulo e artifacts: `relatorio-consolidado`, `api-report`, `e2e-report`, `e2e-known-defects-report`, `mobile-report`                                     |
-| Local, após rodar os testes               | `api/reports/html`, `e2e/reports/cucumber-report.html`, `mobile/reports/html`; consolidado com `npm run relatorio` → `reports/allure-report/index.html`             |
+| Onde                                      | O quê                                                                                                                                                                                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`evidencias/`](evidencias/)              | **Snapshot versionado:** relatório Allure consolidado (`allure-report.html`, abre direto no navegador), resumo dos resultados, relatório das execuções da pipeline e teste de carga (`load/`) |
+| Página de cada execução no GitHub Actions | Resumo por módulo e artifacts: `relatorio-consolidado`, `api-report`, `e2e-report`, `e2e-known-defects-report`, `mobile-report`                                                               |
+| Local, após rodar os testes               | `api/reports/html`, `e2e/reports/cucumber-report.html`, `mobile/reports/html`; consolidado com `npm run relatorio` → `reports/allure-report/index.html`                                       |
 
 Atualizar as evidências a partir da última execução bem-sucedida na `main` (requer o GitHub CLI autenticado): `npm run evidencias`.
 
@@ -228,6 +250,7 @@ Atualizar as evidências a partir da última execução bem-sucedida na `main` (
 | E2E: relatório com evidências, incluindo falhas esperadas                                                   | Screenshot em cada validação; vídeo e trace nas falhas; relatório consolidado                                             |
 | CI/CD: API, E2E e mobile a cada commit, com relatório das execuções                                         | [Pipeline de CI](#pipeline-de-ci-github-actions) e [`evidencias/pipeline/execucoes.md`](evidencias/pipeline/execucoes.md) |
 | Mobile (Appium): login, navegação, validação de elemento, formulário; locators nativos                      | [Testes mobile](#testes-mobile)                                                                                           |
+| Carga (k6): 500 usuários por 5 min, métricas, gargalos, relatório e análise                                 | [Teste de carga](#teste-de-carga) e [`load/ANALISE.md`](load/ANALISE.md)                                                  |
 | Projeto no GitHub, evidências salvas e README                                                               | Este repositório, [`evidencias/`](evidencias/) e este arquivo                                                             |
 
 ## Decisões técnicas
@@ -245,6 +268,7 @@ Atualizar as evidências a partir da última execução bem-sucedida na `main` (
 - O E2E depende do site público AutomationExercise, que às vezes responde "under heavy load"; os testes tentam de novo automaticamente, mas indisponibilidade prolongada derruba o job.
 - Mobile só em Android; iOS exigiria runner macOS e driver XCUITest.
 - Para rodar o mobile localmente é preciso Android SDK e um emulador; na CI isso é provisionado pelo workflow.
+- O teste de carga roda o k6 e o ServeRest na mesma máquina (2 vCPUs na CI); os números valem para esse ambiente.
 - O repositório é privado durante o desenvolvimento; o GitHub Pages (relatório com histórico online) depende de torná-lo público.
 
 O planejamento completo, com decisões, riscos e histórico de cada fase, está em [PLANO.md](PLANO.md).
