@@ -352,6 +352,37 @@ load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamen
 - Badge de status e link dos relatórios no README.
 - Relatório de execuções do pipeline (exigido no item 3): seção no README com prints/links das execuções.
 
+### 5.1 Pasta `evidencias/` (decidida)
+
+Atende à observação do PDF **"Salvar evidências do teste (report)"** de forma permanente, sem depender de artifacts (expiram) nem do GitHub Pages (só com repo público).
+
+**Estrutura:**
+```
+evidencias/
+├── README.md                    # índice: data, commit, link da execução da pipeline, resumo (total/passou/falhou por módulo)
+├── allure-report.html           # Allure consolidado (API + E2E + mobile), arquivo único
+├── api/
+│   └── playwright-report.html   # relatório nativo
+├── e2e/
+│   ├── cucumber-report.html     # relatório nativo
+│   └── screenshots/             # evidências dos cenários, incl. negativos e @known-defect
+├── mobile/
+│   ├── playwright-report.html
+│   └── screenshots/
+├── pipeline/
+│   └── execucoes.md             # links e prints das execuções do GitHub Actions (item 3 do PDF)
+└── load/                        # Fase 6
+    ├── k6-dashboard.html
+    └── resumo.json
+```
+
+**Regras:**
+- A pasta é criada na Fase 0 (com o `README.md` de índice) e preenchida na **Fase 5** (escopo obrigatório) e na **Fase 6** (carga).
+- O conteúdo vem dos **artifacts da execução da pipeline do commit final** — rastreável a uma execução real, não a uma rodada local.
+- Script `npm run evidencias:snapshot` baixa os artifacts da execução (`gh run download`) e organiza na estrutura acima.
+- Tamanho controlado: relatórios em HTML único e screenshots; **vídeos e traces ficam só nos artifacts** (pesados), exceto dos cenários `@known-defect`, que entram como prova dos bugs.
+- Não conflita com o `.gitignore`: os relatórios locais (`**/reports/`) continuam ignorados; só `evidencias/` é versionada.
+
 > **Decidido:** API, E2E e mobile rodam **a cada commit** e são **bloqueantes** (falha em qualquer um deixa a pipeline vermelha), conforme o item 3 do PDF. O job mobile tem `retries: 1` e timeout de 30 min; se ficar instável, plano B da seção 4.3. Exceção intencional: o job `@known-defect` é não bloqueante, pois contém testes que devem falhar.
 >
 > Enquanto o repo for privado (plano Free), não há proteção de branch: "bloqueante" significa pipeline vermelha, sem impedir merge. Ao tornar o repo público, ativar a regra de checks obrigatórios na `main`.
@@ -378,13 +409,13 @@ load-test: workflow separado (load.yml) — apenas workflow_dispatch + agendamen
 | Fase | Escopo | Estimativa | Status |
 |---|---|---|---|
 | — | Exploração do site E2E + spike mobile na CI | — | ✅ Concluído |
-| 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ⏳ |
+| 0 | Fundação: monorepo (npm workspaces), lint/prettier, `docker-compose` ServeRest, esqueleto README, pasta `evidencias/` com índice (`.nvmrc`, `.gitignore` e `package.json` raiz já criados no spike) | 0,5 dia | ⏳ |
 | 1 | API (Playwright) | 1,5 dia | ⏳ |
 | 2 | E2E (Cucumber + Playwright) | 2 dias | ⏳ |
 | 3 | Mobile (Appium + Playwright runner) — infraestrutura já validada no spike | 1 dia | ⏳ |
 | 4 | CI/CD: jobs de API e E2E, lint, caches, job summary (job mobile já existe) | 0,5 dia | ⏳ |
-| 5 | README final, bug reports, snapshot de relatórios em `evidencias/`, revisão geral, pipeline limpa → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
-| 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README; liberar acesso ao avaliador | 0,5 dia | ⏳ |
+| 5 | README final, bug reports, script `evidencias:snapshot` + preenchimento de `evidencias/` a partir da pipeline final, revisão geral → **escopo obrigatório entregue** | 0,5 dia | ⏳ |
+| 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
 | | **Total restante** | **≈ 6,5 dias** | |
 
 Commits seguindo **Conventional Commits**, um conjunto por fase.
@@ -421,7 +452,7 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 | Mobile: configuração do ambiente (critério de avaliação) | README: Android SDK, emulador, Appium/driver, variáveis (`ANDROID_HOME`, `JAVA_HOME`) |
 | Mobile: relatório | Playwright HTML + Allure |
 | Projeto no GitHub/GitLab | GitHub — `MarcosJRuiz/out` (**precisa estar acessível ao avaliador na entrega**) |
-| Evidências salvas | Artifacts por execução + **`evidencias/` versionado na entrega** (artifacts expiram) + Pages quando público |
+| Evidências salvas | **`evidencias/` versionada** (seção 5.1) + artifacts por execução + Pages quando público |
 | README completo | Seção 6 |
 
 ---
@@ -460,11 +491,11 @@ Commits seguindo **Conventional Commits**, um conjunto por fase.
 - [x] Fluxo de branches: spike integrado à `main` via PR; cada fase em branch própria (`feat/fase-N-...`) com PR para a `main`
 - [x] Job mobile **bloqueante** e executado **a cada commit** junto com API e E2E, conforme o PDF (item 3)
 - [x] Load test **fora do pipeline por commit**: workflow próprio, só manual (`workflow_dispatch`) e agendado; implementado na **última fase**
+- [x] Evidências versionadas na pasta **`evidencias/`** do repositório (artifacts do Actions expiram e o Pages só existe com repo público) — ver seção 5.1
 - [x] Relatórios: **Allure consolidado como principal** (API + E2E + mobile) + nativos como complemento (Playwright HTML/Trace Viewer, Cucumber HTML, K6 dashboard)
 
 **Pendentes (decisão):**
 - [ ] Acesso do avaliador na entrega: tornar o repo **público** (sugestão, no fim da Fase 6) ou manter privado e **convidar o avaliador** como colaborador? *Obrigatório resolver antes da entrega — o PDF exige o projeto publicado.*
-- [ ] Evidências versionadas: na Fase 5, gerar um snapshot final dos relatórios e commitar em `evidencias/` (artifacts do Actions expiram e o Pages só existe com repo público) — ok?
 
 **Pendentes (validação técnica, durante as fases):**
 - [ ] Fase 1 — ServeRest: status retornado para método inválido (405/404) e comportamento de PUT com id inexistente
