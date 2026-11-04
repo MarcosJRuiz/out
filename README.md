@@ -10,7 +10,7 @@ Projeto de automação de testes de **API**, **E2E**, **mobile** e **carga**, co
 | Carga  | k6                                     | ServeRest (local, Docker)                                            | 500 usuários por 5 min     |
 | CI/CD  | GitHub Actions                         | —                                                                    | 6 jobs                     |
 
-**Resultado atual:** 80 testes — 78 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências em [`evidencias/`](evidencias/).
+**Resultado atual:** 80 testes — 78 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências em [`evidencias/`](evidencias/) e [online](https://marcosjruiz.github.io/out/).
 
 ## Cobertura dos requisitos da avaliação
 
@@ -251,11 +251,12 @@ lint ──┬─> api-tests            ServeRest como container de serviço    
 
 ## Relatórios e evidências
 
-| Onde                                      | O quê                                                                                                                                                                                         |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`evidencias/`](evidencias/)              | **Snapshot versionado:** relatório Allure consolidado (`allure-report.html`, abre direto no navegador), resumo dos resultados, relatório das execuções da pipeline e teste de carga (`load/`) |
-| Página de cada execução no GitHub Actions | Resumo por módulo e artifacts: `relatorio-consolidado`, `api-report`, `e2e-report`, `e2e-known-defects-report`, `mobile-report`                                                               |
-| Local, após rodar os testes               | `api/reports/html`, `e2e/reports/cucumber-report.html`, `mobile/reports/html`; consolidado com `npm run relatorio` → `reports/allure-report/index.html`                                       |
+| Onde                                               | O quê                                                                                                                                                                              |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [GitHub Pages](https://marcosjruiz.github.io/out/) | **Online, sem baixar nada:** relatório Allure consolidado e dashboards do k6, publicados a partir de `evidencias/`                                                                 |
+| [`evidencias/`](evidencias/)                       | **Snapshot versionado:** relatório Allure consolidado (`allure-report.html`, arquivo único), resumo dos resultados, relatório das execuções da pipeline e teste de carga (`load/`) |
+| Página de cada execução no GitHub Actions          | Resumo por módulo e artifacts: `relatorio-consolidado`, `api-report`, `e2e-report`, `e2e-known-defects-report`, `mobile-report`                                                    |
+| Local, após rodar os testes                        | `api/reports/html`, `e2e/reports/cucumber-report.html`, `mobile/reports/html`; consolidado com `npm run relatorio` → `reports/allure-report/index.html`                            |
 
 Atualizar as evidências a partir da última execução bem-sucedida na `main` (requer o GitHub CLI autenticado): `npm run evidencias`.
 
