@@ -117,9 +117,12 @@ writeFileSync(
   versionar(
     readFileSync(path.join(PAGINAS, 'index.html'), 'utf8')
       .replace('<!-- BUGS -->', itens.join('\n      '))
-      .replaceAll('__SHA__', (process.env.SHA ?? '').slice(0, 7)),
+      .replaceAll('__SHA__', (process.env.SHA ?? '').slice(0, 7))
+      .replaceAll('__VERSAO__', VERSAO),
   ),
 );
+// Lido sem cache pela página principal para saber se há uma publicação mais nova.
+writeFileSync(path.join(site, 'versao.json'), JSON.stringify({ versao: VERSAO }));
 writeFileSync(
   path.join(site, 'pipeline.html'),
   versionar(readFileSync(path.join(PAGINAS, 'pipeline.html'), 'utf8')),

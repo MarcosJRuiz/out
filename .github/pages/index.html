@@ -4,6 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Evidências dos testes</title>
+    <script>
+      // A página principal não leva a versão no endereço e pode vir do cache (o Pages manda guardar por 10 min):
+      // confere a publicação mais recente sem cache e, se mudou, abre pelo endereço da versão nova.
+      fetch('versao.json', { cache: 'no-store' })
+        .then((resposta) => resposta.json())
+        .then(({ versao }) => {
+          const pedida = new URLSearchParams(location.search).get('v');
+          if (versao !== '__VERSAO__' && pedida !== versao)
+            location.replace(`${location.pathname}?v=${versao}${location.hash}`);
+        })
+        .catch(() => {});
+    </script>
     <link rel="stylesheet" href="tema.css" />
     <script src="tema.js"></script>
     <style>
