@@ -14,17 +14,17 @@ Projeto de automação de testes de **API**, **E2E**, **mobile** e **carga**, co
 
 ## Cobertura dos requisitos da avaliação
 
-| Requisito                                                                                                   | Onde                                                                                                                      |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| API: status code, headers e corpo; positivos e negativos (dados inválidos, ausentes, autenticação inválida) | [Testes de API](#testes-de-api) — `support/assertions.ts` valida as três partes em toda resposta                          |
-| API: GET, POST, PUT e DELETE em vários endpoints; método inválido, payload malformado e dados ausentes      | `usuarios`, `produtos`, `carrinhos`, `login` e `metodos-http.spec.ts`                                                     |
-| E2E com Cucumber: login, navegação até um formulário, assertivas, positivos e negativos, Page Object        | `login.feature` (L1–L7) e `e2e/pages/`                                                                                    |
-| E2E: checkout (carrinho, pagamento, finalização), cartão inválido e endereço incompleto                     | `checkout.feature` (C1–C6); C5 e C6 comprovam defeitos do site                                                            |
-| E2E: relatório com evidências, incluindo falhas esperadas                                                   | Screenshot em cada validação; vídeo e trace nas falhas; relatório consolidado                                             |
-| CI/CD: API, E2E e mobile a cada commit, com relatório das execuções                                         | [Pipeline de CI](#pipeline-de-ci-github-actions) e [`evidencias/pipeline/execucoes.md`](evidencias/pipeline/execucoes.md) |
-| Mobile (Appium): login, navegação, validação de elemento, formulário; locators nativos                      | [Testes mobile](#testes-mobile)                                                                                           |
-| Carga (k6): 500 usuários por 5 min, métricas, gargalos, relatório e análise                                 | [Teste de carga](#teste-de-carga) e [`load/ANALISE.md`](load/ANALISE.md)                                                  |
-| Projeto no GitHub, evidências salvas e README                                                               | Este repositório, [`evidencias/`](evidencias/) e este arquivo                                                             |
+| Requisito                                                                                                   | Onde                                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API: status code, headers e corpo; positivos e negativos (dados inválidos, ausentes, autenticação inválida) | [Testes de API](#testes-de-api) — `support/assertions.ts` valida as três partes em toda resposta                                                                                            |
+| API: GET, POST, PUT e DELETE em vários endpoints; método inválido, payload malformado e dados ausentes      | `usuarios`, `produtos`, `carrinhos`, `login` e `metodos-http.spec.ts`                                                                                                                       |
+| E2E com Cucumber: login, navegação até um formulário, assertivas, positivos e negativos, Page Object        | `login.feature` (L1–L7) e `e2e/pages/`                                                                                                                                                      |
+| E2E: checkout (carrinho, pagamento, finalização), cartão inválido e endereço incompleto                     | `checkout.feature` (C1–C6); C5 e C6 comprovam defeitos do site                                                                                                                              |
+| E2E: relatório com evidências, incluindo falhas esperadas                                                   | Screenshot em cada validação; vídeo e trace nas falhas; relatório consolidado                                                                                                               |
+| CI/CD: API, E2E e mobile a cada commit, com relatório das execuções                                         | [Pipeline de CI](#pipeline-de-ci-github-actions), [`evidencias/pipeline/execucoes.md`](evidencias/pipeline/execucoes.md) e [execuções ao vivo](https://marcosjruiz.github.io/out/#pipeline) |
+| Mobile (Appium): login, navegação, validação de elemento, formulário; locators nativos                      | [Testes mobile](#testes-mobile)                                                                                                                                                             |
+| Carga (k6): 500 usuários por 5 min, métricas, gargalos, relatório e análise                                 | [Teste de carga](#teste-de-carga), [`load/ANALISE.md`](load/ANALISE.md) e [dashboard online](https://marcosjruiz.github.io/out/#carga)                                                      |
+| Projeto no GitHub, evidências salvas e README                                                               | Este repositório, [`evidencias/`](evidencias/) e este arquivo                                                                                                                               |
 
 ## Estrutura
 
@@ -206,7 +206,7 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 
 - **Estresse complementar** (mesmos 500 usuários, sem pausa): a vazão para em ~450 req/s, o p95 sobe para 940 ms e surgem timeouts no login — o gargalo é a **CPU do processo único do ServeRest**. Análise completa, gargalos e recomendações em [`load/ANALISE.md`](load/ANALISE.md).
 - **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários, duração e pausa configuráveis), toda segunda-feira e quando o teste de carga muda.
-- **Relatórios:** dashboard HTML do k6 (gráficos ao longo do tempo), resumo JSON e tabela de métricas no resumo da execução. Evidências em [`evidencias/load/`](evidencias/load/).
+- **Relatórios:** dashboard HTML do k6 (gráficos ao longo do tempo), resumo JSON e tabela de métricas no resumo da execução. Evidências em [`evidencias/load/`](evidencias/load/); dashboards online: [carga](https://marcosjruiz.github.io/out/#carga) e [estresse](https://marcosjruiz.github.io/out/#estresse).
 - **No relatório consolidado:** cada threshold do cenário oficial vira um teste do módulo **Carga** no Allure, com o valor medido e o dashboard anexado; o estresse fica em _Global Attachments_. Os dados são os do último teste de carga versionado em `evidencias/load/`, já que a carga não roda a cada commit.
 
 ```bash

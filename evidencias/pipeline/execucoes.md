@@ -1,5 +1,7 @@
 # Execuções da pipeline
 
+Execuções mais recentes, ao vivo: [site de evidências → Pipeline de CI](https://marcosjruiz.github.io/out/#pipeline).
+
 ## Execução de referência
 
 [https://github.com/MarcosJRuiz/out/actions/runs/41881419708](https://github.com/MarcosJRuiz/out/actions/runs/41881419708) — commit `ee64a43` (main), 5m53s no total.

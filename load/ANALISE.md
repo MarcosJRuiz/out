@@ -89,5 +89,5 @@ VUS=500 PATAMAR=2m PAUSA=0 npm run test:carga     # estresse
 
 ## Evidências
 
-- Cenário oficial (CI): [`evidencias/load/oficial/k6-dashboard.html`](../evidencias/load/oficial/k6-dashboard.html) (gráficos ao longo do tempo) e [`resumo-k6.json`](../evidencias/load/oficial/resumo-k6.json)
-- Estresse (local): [`evidencias/load/estresse/k6-dashboard.html`](../evidencias/load/estresse/k6-dashboard.html) e [`resumo-k6.json`](../evidencias/load/estresse/resumo-k6.json)
+- Cenário oficial (CI): [dashboard online](https://marcosjruiz.github.io/out/#carga) (gráficos ao longo do tempo; arquivo em [`evidencias/load/oficial/`](../evidencias/load/oficial/)) e [`resumo-k6.json`](../evidencias/load/oficial/resumo-k6.json)
+- Estresse (local): [dashboard online](https://marcosjruiz.github.io/out/#estresse) (arquivo em [`evidencias/load/estresse/`](../evidencias/load/estresse/)) e [`resumo-k6.json`](../evidencias/load/estresse/resumo-k6.json)
