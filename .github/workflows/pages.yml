@@ -1,0 +1,68 @@
+name: Pages
+
+# Publica o snapshot de evidencias/ no GitHub Pages: o GitHub não renderiza HTML no repositório,
+# então o relatório Allure e os dashboards do k6 passam a abrir direto no navegador.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'evidencias/**'
+      - '.github/workflows/pages.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Montar o site
+        run: |
+          mkdir -p site
+          cp -r evidencias/allure-report.html evidencias/load site/
+          cat > site/index.html <<'HTML'
+          <!doctype html>
+          <html lang="pt-BR">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Evidências dos testes</title>
+              <style>
+                body { font-family: system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px; line-height: 1.5; }
+                li { margin: 8px 0; }
+              </style>
+            </head>
+            <body>
+              <h1>Evidências dos testes</h1>
+              <ul>
+                <li><a href="allure-report.html">Relatório consolidado (Allure): API, E2E e mobile</a></li>
+                <li><a href="load/oficial/k6-dashboard.html">Teste de carga: 500 usuários por 5 minutos (k6)</a></li>
+                <li><a href="load/estresse/k6-dashboard.html">Teste de estresse: 500 usuários sem pausa (k6)</a></li>
+              </ul>
+              <p><a href="https://github.com/MarcosJRuiz/out/tree/main/evidencias">Resumo dos resultados e histórico da pipeline</a></p>
+            </body>
+          </html>
+          HTML
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Publicar
+        id: deploy
+        uses: actions/deploy-pages@v5
