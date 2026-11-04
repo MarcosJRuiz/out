@@ -28,6 +28,11 @@ export default tseslint.config(
     languageOptions: { globals: { __ENV: 'readonly', __VU: 'readonly', __ITER: 'readonly' } },
   },
   {
+    // Scripts do site do GitHub Pages rodam no navegador.
+    files: ['.github/pages/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
+  },
+  {
     // Fixtures do Playwright exigem o primeiro parâmetro desestruturado, mesmo vazio.
     files: ['**/fixtures/**/*.ts'],
     rules: { 'no-empty-pattern': 'off' },
