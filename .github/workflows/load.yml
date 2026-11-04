@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   carga:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       serverest:
@@ -48,7 +48,7 @@ jobs:
       K6_WEB_DASHBOARD: 'true'
       K6_WEB_DASHBOARD_EXPORT: load/reports/k6-dashboard.html
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: grafana/setup-k6-action@v1
         with:
@@ -69,7 +69,7 @@ jobs:
 
       - name: Publicar relatório
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: carga-report
           path: load/reports/
