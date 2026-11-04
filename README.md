@@ -12,33 +12,53 @@ Projeto de automação de testes de **API**, **E2E**, **mobile** e **carga**, co
 
 **Resultado atual:** 80 testes — 78 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências em [`evidencias/`](evidencias/).
 
+## Cobertura dos requisitos da avaliação
+
+| Requisito                                                                                                   | Onde                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| API: status code, headers e corpo; positivos e negativos (dados inválidos, ausentes, autenticação inválida) | [Testes de API](#testes-de-api) — `support/assertions.ts` valida as três partes em toda resposta                          |
+| API: GET, POST, PUT e DELETE em vários endpoints; método inválido, payload malformado e dados ausentes      | `usuarios`, `produtos`, `carrinhos`, `login` e `metodos-http.spec.ts`                                                     |
+| E2E com Cucumber: login, navegação até um formulário, assertivas, positivos e negativos, Page Object        | `login.feature` (L1–L7) e `e2e/pages/`                                                                                    |
+| E2E: checkout (carrinho, pagamento, finalização), cartão inválido e endereço incompleto                     | `checkout.feature` (C1–C6); C5 e C6 comprovam defeitos do site                                                            |
+| E2E: relatório com evidências, incluindo falhas esperadas                                                   | Screenshot em cada validação; vídeo e trace nas falhas; relatório consolidado                                             |
+| CI/CD: API, E2E e mobile a cada commit, com relatório das execuções                                         | [Pipeline de CI](#pipeline-de-ci-github-actions) e [`evidencias/pipeline/execucoes.md`](evidencias/pipeline/execucoes.md) |
+| Mobile (Appium): login, navegação, validação de elemento, formulário; locators nativos                      | [Testes mobile](#testes-mobile)                                                                                           |
+| Carga (k6): 500 usuários por 5 min, métricas, gargalos, relatório e análise                                 | [Teste de carga](#teste-de-carga) e [`load/ANALISE.md`](load/ANALISE.md)                                                  |
+| Projeto no GitHub, evidências salvas e README                                                               | Este repositório, [`evidencias/`](evidencias/) e este arquivo                                                             |
+
 ## Estrutura
 
 ```
 .
-├── api/                  # Testes de API — Playwright Test + ServeRest
-├── e2e/                  # Testes E2E — Cucumber + Playwright (AutomationExercise)
-├── mobile/               # Testes mobile — Playwright Test + WebdriverIO + Appium (My Demo App, Android)
-├── load/                 # Teste de carga — k6 (script, resumo e ANALISE.md)
-├── docs/bugs/            # Bug reports dos defeitos encontrados
-├── evidencias/           # Snapshot versionado dos relatórios
-├── scripts/              # Relatório consolidado (Allure + resumo) e snapshot das evidências
-├── allurerc.mjs          # Configuração do relatório Allure consolidado
-├── docker-compose.yml    # ServeRest local
-└── .github/workflows/    # Pipeline de CI
+├── api/                        # Testes de API — Playwright Test + ServeRest
+│   ├── tests/                  # *.spec.ts
+│   ├── clients/                # clients por recurso
+│   ├── fixtures/               # clients e massa de dados
+│   ├── schemas/                # contratos (Zod)
+│   ├── support/                # validações
+│   └── playwright.config.ts
+├── e2e/                        # Testes E2E — Cucumber + Playwright (AutomationExercise)
+│   ├── features/               # *.feature (pt)
+│   ├── steps/                  # step definitions
+│   ├── pages/                  # Page Objects
+│   ├── support/                # World e hooks
+│   └── cucumber.mjs
+├── mobile/                     # Testes mobile — Playwright Test + WebdriverIO + Appium (My Demo App, Android)
+│   ├── tests/                  # *.spec.ts
+│   ├── screens/                # Screen Objects
+│   ├── fixtures/               # sessão Appium
+│   ├── support/                # Appium e app
+│   └── playwright.config.ts
+├── load/                       # Teste de carga — k6 (script, resumo e ANALISE.md)
+├── docs/bugs/                  # Bug reports dos defeitos encontrados
+├── evidencias/                 # Snapshot versionado dos relatórios
+├── scripts/                    # Relatório consolidado (Allure + resumo) e snapshot das evidências
+├── allurerc.mjs                # Configuração do relatório Allure consolidado
+├── docker-compose.yml          # ServeRest local
+└── .github/workflows/          # Pipeline de CI
 ```
 
-Cada módulo de teste é um workspace npm com `package.json`, configuração e relatórios próprios:
-
-```
-api/                               e2e/                               mobile/
-├── tests/        *.spec.ts        ├── features/     *.feature (pt)   ├── tests/        *.spec.ts
-├── clients/      por recurso      ├── steps/        step definitions ├── screens/      Screen Objects
-├── fixtures/     clients e massa  ├── pages/        Page Objects     ├── fixtures/     sessão Appium
-├── schemas/      contratos (Zod)  ├── support/      World e hooks    ├── support/      Appium e app
-├── support/      validações       └── cucumber.mjs                   └── playwright.config.ts
-└── playwright.config.ts
-```
+`api/`, `e2e/` e `mobile/` são workspaces npm, cada um com `package.json`, configuração e relatórios próprios.
 
 ## Stack e versões
 
@@ -136,11 +156,11 @@ Playwright Test (`APIRequestContext`) contra o [ServeRest](https://serverest.dev
 
 Cucumber (Gherkin em português) com Playwright como biblioteca, contra o [AutomationExercise](https://automationexercise.com). Page Object Pattern em `e2e/pages/`.
 
-| Feature                              | Cenários                                                                                                                                                                                           | Resultado                              |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| `login.feature`                      | L1 login válido e navegação até o formulário **Contact Us**; L2 senha incorreta; L3 usuário inexistente; L4/L5 campos obrigatórios em branco; L6 e-mail inválido; L7 cadastro com e-mail existente | 7 ✅                                   |
-| `checkout.feature`                   | C1 compra completa; C2 checkout sem login; C3 carrinho vazio; C4 pagamento em branco                                                                                                               | 4 ✅                                   |
-| `checkout.feature` (`@known-defect`) | C5 cartão inválido; C6 endereço de entrega incompleto                                                                                                                                              | 2 ❌ falha esperada — defeitos do site |
+| Feature                              | Cenários                                                                                                                                                                                           | Resultado                           |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `login.feature`                      | L1 login válido e navegação até o formulário **Contact Us**; L2 senha incorreta; L3 usuário inexistente; L4/L5 campos obrigatórios em branco; L6 e-mail inválido; L7 cadastro com e-mail existente | 7 sucesso                           |
+| `checkout.feature`                   | C1 compra completa; C2 checkout sem login; C3 carrinho vazio; C4 pagamento em branco                                                                                                               | 4 sucesso                           |
+| `checkout.feature` (`@known-defect`) | C5 cartão inválido; C6 endereço de entrega incompleto                                                                                                                                              | 2 falha esperada — defeitos do site |
 
 - **Massa:** cada cenário cria a própria conta pela API do site e a exclui ao final.
 - **Estabilidade:** bloqueio de anúncios, espera pela resposta do "add to cart" e nova tentativa automática quando o site responde "under heavy load". Retry de 1 vez na CI (exceto `@known-defect`).
@@ -162,26 +182,26 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 
 | Arquivo                         | Cenários                                                                                                                                                                                               | Resultado |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
-| `login.spec.ts` (Tarefa 1)      | Login válido → catálogo → detalhe do produto (nome, preço e botão **Add To Cart**) → carrinho (contador, produto e total); negativos: senha incorreta, usuário bloqueado, usuário e senha obrigatórios | 5 ✅      |
-| `formulario.spec.ts` (Tarefa 2) | Preenche os 7 campos do endereço, confere cada valor e envia → tela de pagamento; negativo: envio vazio com mensagem em cada campo obrigatório                                                         | 2 ✅      |
+| `login.spec.ts` (Tarefa 1)      | Login válido → catálogo → detalhe do produto (nome, preço e botão **Add To Cart**) → carrinho (contador, produto e total); negativos: senha incorreta, usuário bloqueado, usuário e senha obrigatórios | 5 sucesso |
+| `formulario.spec.ts` (Tarefa 2) | Preenche os 7 campos do endereço, confere cada valor e envia → tela de pagamento; negativo: envio vazio com mensagem em cada campo obrigatório                                                         | 2 sucesso |
 
 - **Locators nativos:** accessibility id (`content-desc`) em todos os elementos, sem XPath; rolagem com `UiScrollable` para campos abaixo da dobra.
 - **Isolamento e tempo:** uma sessão do Appium por execução (abrir sessão custa ~40 s); antes de cada teste o app é limpo (`mobile: clearApp`) e reaberto no catálogo.
 - **Estabilidade no emulador da CI:** se o catálogo não aparecer ao abrir o app, o teste dispensa diálogos do sistema Android ("isn't responding"), reinicia o app e tenta de novo (até 3 vezes), anexando screenshot, page source e logcat de cada tentativa. Na pipeline, a imagem do Android é baixada antes do emulador com até 3 tentativas (o download às vezes chega corrompido).
 - **Evidências:** screenshot em cada ponto de validação e da tela final de todo teste; XML da tela (page source) nas falhas; log do Appium em `mobile/reports/appium.log`.
 - **Relatórios:** `mobile/reports/html` e resultados Allure em `mobile/reports/allure-results`.
-- **Limitações:** só Android (iOS exigiria runner macOS e driver XCUITest — melhoria futura); o Trace Viewer do Playwright não se aplica a app nativo.
+- **Limitação:** o Trace Viewer do Playwright não se aplica a app nativo.
 
 ## Teste de carga
 
 [k6](https://k6.io) contra o ServeRest: **500 usuários simultâneos por 5 minutos** (rampa de 30 s, patamar de 5 min, descida de 30 s). Cada usuário faz login, lista os produtos e consulta um produto, com 1 s de pausa entre as ações.
 
-| Resultado (CI, 2 vCPUs) | Valor               | Critério        |
-| ----------------------- | ------------------- | --------------- |
-| Requisições / vazão     | 165.015 / 455 req/s | —               |
-| Taxa de erro            | 0,00%               | < 1% ✅         |
-| Checks                  | 100%                | > 99% ✅        |
-| p95 / p99               | 13 ms / 30 ms       | p95 < 500 ms ✅ |
+| Resultado (CI, 2 vCPUs) | Valor               | Critério             |
+| ----------------------- | ------------------- | -------------------- |
+| Requisições / vazão     | 165.015 / 455 req/s | —                    |
+| Taxa de erro            | 0,00%               | < 1% sucesso         |
+| Checks                  | 100%                | > 99% sucesso        |
+| p95 / p99               | 13 ms / 30 ms       | p95 < 500 ms sucesso |
 
 - **Estresse complementar** (mesmos 500 usuários, sem pausa): a vazão para em ~450 req/s, o p95 sobe para 940 ms e surgem timeouts no login — o gargalo é a **CPU do processo único do ServeRest**. Análise completa, gargalos e recomendações em [`load/ANALISE.md`](load/ANALISE.md).
 - **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários, duração e pausa configuráveis), toda segunda-feira e quando o teste de carga muda.
@@ -239,20 +259,6 @@ lint ──┬─> api-tests            ServeRest como container de serviço    
 
 Atualizar as evidências a partir da última execução bem-sucedida na `main` (requer o GitHub CLI autenticado): `npm run evidencias`.
 
-## Cobertura dos requisitos da avaliação
-
-| Requisito                                                                                                   | Onde                                                                                                                      |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| API: status code, headers e corpo; positivos e negativos (dados inválidos, ausentes, autenticação inválida) | [Testes de API](#testes-de-api) — `support/assertions.ts` valida as três partes em toda resposta                          |
-| API: GET, POST, PUT e DELETE em vários endpoints; método inválido, payload malformado e dados ausentes      | `usuarios`, `produtos`, `carrinhos`, `login` e `metodos-http.spec.ts`                                                     |
-| E2E com Cucumber: login, navegação até um formulário, assertivas, positivos e negativos, Page Object        | `login.feature` (L1–L7) e `e2e/pages/`                                                                                    |
-| E2E: checkout (carrinho, pagamento, finalização), cartão inválido e endereço incompleto                     | `checkout.feature` (C1–C6); C5 e C6 comprovam defeitos do site                                                            |
-| E2E: relatório com evidências, incluindo falhas esperadas                                                   | Screenshot em cada validação; vídeo e trace nas falhas; relatório consolidado                                             |
-| CI/CD: API, E2E e mobile a cada commit, com relatório das execuções                                         | [Pipeline de CI](#pipeline-de-ci-github-actions) e [`evidencias/pipeline/execucoes.md`](evidencias/pipeline/execucoes.md) |
-| Mobile (Appium): login, navegação, validação de elemento, formulário; locators nativos                      | [Testes mobile](#testes-mobile)                                                                                           |
-| Carga (k6): 500 usuários por 5 min, métricas, gargalos, relatório e análise                                 | [Teste de carga](#teste-de-carga) e [`load/ANALISE.md`](load/ANALISE.md)                                                  |
-| Projeto no GitHub, evidências salvas e README                                                               | Este repositório, [`evidencias/`](evidencias/) e este arquivo                                                             |
-
 ## Decisões técnicas
 
 - **Playwright como base:** runner da API e do mobile e biblioteca do E2E — mesma linguagem (TypeScript), mesmas asserções e relatórios.
@@ -267,8 +273,4 @@ Atualizar as evidências a partir da última execução bem-sucedida na `main` (
 
 - O E2E depende do site público AutomationExercise, que às vezes responde "under heavy load"; os testes tentam de novo automaticamente, mas indisponibilidade prolongada derruba o job.
 - Mobile só em Android; iOS exigiria runner macOS e driver XCUITest.
-- Para rodar o mobile localmente é preciso Android SDK e um emulador; na CI isso é provisionado pelo workflow.
 - O teste de carga roda o k6 e o ServeRest na mesma máquina (2 vCPUs na CI); os números valem para esse ambiente.
-- O repositório é privado durante o desenvolvimento; o GitHub Pages (relatório com histórico online) depende de torná-lo público.
-
-O planejamento completo, com decisões, riscos e histórico de cada fase, está em [PLANO.md](PLANO.md).
