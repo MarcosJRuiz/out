@@ -1,7 +1,7 @@
 // Monta a página inicial do GitHub Pages em <pasta do site>: menu lateral com os relatórios, o README e os
 // bug reports. Os Markdown são convertidos pela API de Markdown do GitHub (mesma renderização do repositório)
-// e ajustados para fora dele: títulos ganham id para os links internos, links relativos apontam para o
-// repositório e os externos abrem em nova aba.
+// e ajustados para fora dele: títulos ganham id para os links internos, links para o que está publicado no site
+// abrem o item do menu correspondente e os demais abrem em nova aba.
 //
 // Uso: GITHUB_TOKEN=... SHA=<commit> node .github/pages/montar.mjs <pasta do site>
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -10,6 +10,7 @@ import path from 'node:path';
 const REPOSITORIO = 'MarcosJRuiz/out';
 const BASE = `https://github.com/${REPOSITORIO}`;
 const PAGINAS = '.github/pages';
+const SITE = 'https://marcosjruiz.github.io/out/';
 const site = process.argv[2];
 
 // Mesmo formato de âncora do GitHub: minúsculas, sem pontuação, espaços viram hífen.
@@ -20,7 +21,25 @@ const ancora = (titulo) =>
     .replace(/[^\p{L}\p{N}\s_-]/gu, '')
     .replace(/\s/g, '-');
 
+// Arquivo do repositório que está no site: item do menu ("#carga") ou cópia publicada ("load/..."); null se não estiver.
+function noSite(arquivo) {
+  const alvo = arquivo.replace(/\/$/, '');
+  const pasta = arquivo.endsWith('/');
+  const bug = alvo.match(/^docs\/bugs\/(BUG-\d+)/);
+  if (bug) return `#${bug[1].toLowerCase()}`;
+  if (alvo === 'README.md') return '#readme';
+  if (alvo === 'load/ANALISE.md') return '#analise';
+  if (alvo === 'evidencias' || alvo === 'evidencias/allure-report.html') return '#allure';
+  if (alvo.startsWith('evidencias/pipeline')) return '#pipeline';
+  if (alvo === 'evidencias/load/estresse') return '#estresse';
+  if (alvo === 'evidencias/load' || alvo === 'evidencias/load/oficial') return '#carga';
+  if (alvo.startsWith('evidencias/load/') && !pasta) return alvo.slice('evidencias/'.length);
+  return null;
+}
+
 async function converter(entrada, saida, titulo) {
+  mkdirSync(path.dirname(saida), { recursive: true });
+  const raiz = path.relative(path.dirname(saida), site) || '.';
   const resposta = await fetch('https://api.github.com/markdown', {
     method: 'POST',
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${process.env.GITHUB_TOKEN}` },
@@ -34,15 +53,15 @@ async function converter(entrada, saida, titulo) {
     )
     .replace(/<a href="([^"]+)"/g, (_, href) => {
       if (href.startsWith('#')) return `<a href="${href}"`;
-      let url = href;
-      if (!/^[a-z]+:/i.test(href)) {
-        const alvo = path.posix.join(path.posix.dirname(entrada), href);
-        url = `${BASE}/${href.endsWith('/') ? 'tree' : 'blob'}/main/${alvo}`;
-      }
+      const externo = /^[a-z]+:/i.test(href);
+      const arquivo = externo ? null : path.posix.join(path.posix.dirname(entrada), href);
+      const local = href.startsWith(SITE) ? href.slice(SITE.length) || '#allure' : arquivo && noSite(arquivo);
+      // Item do menu: troca só o hash da página principal, que abre o item sem recarregar o site.
+      if (local?.startsWith('#')) return `<a href="${raiz}/${local}" target="_top"`;
+      if (local) return `<a href="${raiz}/${local}" target="_blank" rel="noopener"`;
+      const url = externo ? href : `${BASE}/${href.endsWith('/') ? 'tree' : 'blob'}/main/${arquivo}`;
       return `<a href="${url}" target="_blank" rel="noopener"`;
     });
-  mkdirSync(path.dirname(saida), { recursive: true });
-  const raiz = path.relative(path.dirname(saida), site) || '.';
   writeFileSync(
     saida,
     `<!doctype html>
@@ -66,6 +85,7 @@ ${corpo}
 }
 
 await converter('README.md', path.join(site, 'readme.html'), 'README');
+await converter('load/ANALISE.md', path.join(site, 'analise.html'), 'Análise do teste de carga');
 
 // Cada bug report vira um item do menu: o código (BUG-001) como título e a descrição como subtítulo.
 const itens = [];
