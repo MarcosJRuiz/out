@@ -21,7 +21,7 @@
 | Fase 3 — Mobile | ✅ Concluída (branch `feat/fase-3-mobile`): 7 testes aprovados na CI sem retry; job mobile reativado em todo push |
 | Fase 4 — CI/CD | ✅ Concluída (branch `feat/fase-4-ci`): job `publish-reports` com Allure consolidado e resumo da execução |
 | Fase 5 — Fechamento | ✅ Concluída (branch `feat/fase-5-fechamento`): `evidencias/` gerada da pipeline da `main`, README final → **escopo obrigatório entregue** |
-| Fase 6 — Carga (opcional) | ⏳ Não iniciada |
+| Fase 6 — Carga (opcional) | ✅ Concluída (branch `feat/fase-6-carga`): 500 usuários por 5 min aprovados na CI; estresse identificou o gargalo (CPU do processo único do ServeRest) |
 
 ---
 
@@ -381,6 +381,19 @@ Próximos ajustes no job: upload do logcat.
 - **Execução:** local (`docker compose up` + `k6 run`) e no workflow próprio `.github/workflows/load.yml`, **fora do pipeline por commit** — gatilhos `workflow_dispatch` (manual) e `schedule` (semanal). ServeRest como service container no mesmo runner; relatório HTML e resumo como artifact. Cada execução consome ~7 min de CI.
 - **Implementado na última fase (Fase 6).**
 
+**Resultado da Fase 6:**
+
+| | Cenário oficial (CI) | Estresse (local, `PAUSA=0`) |
+|---|---|---|
+| Vazão | 455 req/s | 452 req/s (teto) |
+| Erros | 0,00% | 0,40% (timeouts no login) |
+| p95 | 13 ms | 940 ms |
+| CPU do ServeRest | — | ~110% (1 núcleo saturado); k6 em 4% |
+
+- O cenário oficial passou em todos os thresholds com ampla folga, mas não revelava o limite; o estresse complementar mostrou o gargalo: **CPU do processo único do ServeRest** (Node.js), com fila dentro do servidor (`waiting` alto, `blocked` ~0) e o **login** como operação mais sensível. Detalhes, hipóteses e recomendações em `load/ANALISE.md`.
+- **Correção:** o runner do repositório privado tem **2 vCPUs e 7,7 GB** (e não 4 vCPUs/16 GB, que valem para repositórios públicos).
+- `scripts/evidencias-snapshot.mjs` passou a preservar `evidencias/load/` ao atualizar as demais evidências.
+
 ---
 
 ## 5. CI/CD — GitHub Actions
@@ -479,7 +492,7 @@ evidencias/
 | 3 | Mobile (Appium + Playwright runner) + job `mobile-tests` reativado em todo push (sem a condição de branch) | 1 dia | ✅ |
 | 4 | CI/CD: job `publish-reports` (Allure 3 consolidado em HTML único + resumo no `$GITHUB_STEP_SUMMARY`), documentação da pipeline no README (demais jobs antecipados nas Fases 0–3) | 0,5 dia | ✅ |
 | 5 | README final (resumo, estrutura por módulo, cobertura dos requisitos, decisões, limitações), `npm run evidencias` + `evidencias/` gerada da pipeline da `main` → **escopo obrigatório entregue** | 0,5 dia | ✅ |
-| 6 | Carga (K6) + análise + workflow `load.yml` (manual/agendado) + seção no README + `evidencias/load/`; liberar acesso ao avaliador | 0,5 dia | ⏳ |
+| 6 | Carga (k6): script, workflow `load.yml`, estresse complementar, `load/ANALISE.md`, `evidencias/load/` e seção no README | 0,5 dia | ✅ |
 | | **Total restante** | **≈ 6,5 dias** | |
 
 Commits seguindo **Conventional Commits**, um conjunto por fase.

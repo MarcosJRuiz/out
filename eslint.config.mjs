@@ -23,6 +23,11 @@ export default tseslint.config(
     },
   },
   {
+    // Scripts do k6 rodam no runtime do k6, que expõe estas variáveis globais.
+    files: ['load/scripts/**/*.js'],
+    languageOptions: { globals: { __ENV: 'readonly', __VU: 'readonly', __ITER: 'readonly' } },
+  },
+  {
     // Fixtures do Playwright exigem o primeiro parâmetro desestruturado, mesmo vazio.
     files: ['**/fixtures/**/*.ts'],
     rules: { 'no-empty-pattern': 'off' },

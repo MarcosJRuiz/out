@@ -1,0 +1,76 @@
+name: Carga
+
+# Teste de carga fora do pipeline por commit (decisão do plano): roda manualmente, toda semana
+# e quando o próprio teste de carga muda.
+on:
+  workflow_dispatch:
+    inputs:
+      vus:
+        description: Usuários simultâneos
+        default: '500'
+      patamar:
+        description: 'Duração com todos os usuários (ex.: 5m)'
+        default: 5m
+      pausa:
+        description: 'Segundos entre as ações de cada usuário (0 = estresse)'
+        default: '1'
+  schedule:
+    - cron: '0 6 * * 1' # segunda-feira, 06:00 UTC
+  push:
+    paths:
+      - 'load/**'
+      - '.github/workflows/load.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  carga:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      serverest:
+        image: paulogoncalvesbh/serverest:3.2.2
+        ports:
+          - 3000:3000
+        options: >-
+          --health-cmd "wget -qO- http://localhost:3000/usuarios > /dev/null || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      BASE_URL: http://localhost:3000
+      RESULTADOS: load/reports
+      VUS: ${{ inputs.vus || '500' }}
+      PATAMAR: ${{ inputs.patamar || '5m' }}
+      PAUSA: ${{ inputs.pausa || '1' }}
+      K6_WEB_DASHBOARD: 'true'
+      K6_WEB_DASHBOARD_EXPORT: load/reports/k6-dashboard.html
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: '2.3.0'
+
+      - name: Recursos da máquina de teste
+        run: |
+          echo "CPUs: $(nproc) | Memória: $(free -h | awk '/Mem/ {print $2}')"
+          mkdir -p load/reports
+
+      # Thresholds reprovados fazem o k6 sair com erro; o relatório é publicado mesmo assim.
+      - name: Executar teste de carga
+        run: k6 run load/scripts/carga-500vus.js
+
+      - name: Resumo da execução
+        if: always()
+        run: node load/scripts/resumo.mjs load/reports/resumo-k6.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: carga-report
+          path: load/reports/
+          if-no-files-found: warn

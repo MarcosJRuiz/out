@@ -9,3 +9,23 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Teste de carga (K6). Uso: docker compose --profile carga run --rm k6
+  k6:
+    image: grafana/k6:2.3.0
+    profiles: ['carga']
+    depends_on:
+      serverest:
+        condition: service_healthy
+    volumes:
+      - ./load:/load
+    environment:
+      BASE_URL: http://serverest:3000
+      RESULTADOS: /load/reports
+      VUS: ${VUS:-500}
+      PATAMAR: ${PATAMAR:-5m}
+      RAMPA: ${RAMPA:-30s}
+      PAUSA: ${PAUSA:-1}
+      K6_WEB_DASHBOARD: 'true'
+      K6_WEB_DASHBOARD_EXPORT: /load/reports/k6-dashboard.html
+    command: ['run', '/load/scripts/carga-500vus.js']
