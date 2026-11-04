@@ -1,16 +1,17 @@
 name: Pages
 
-# Publica o snapshot de evidencias/ no GitHub Pages: o GitHub não renderiza HTML no repositório,
-# então o relatório Allure e os dashboards do k6 passam a abrir direto no navegador.
+# Publica no GitHub Pages o relatório consolidado da última CI aprovada na main e os dashboards do k6
+# versionados em evidencias/load: o GitHub não renderiza HTML no repositório, então tudo abre direto no navegador.
+# Só roda depois que a CI termina com sucesso; a execução manual publica a última CI aprovada.
 on:
-  workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'evidencias/**'
-      - '.github/workflows/pages.yml'
+  workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -21,19 +22,51 @@ concurrency:
 
 jobs:
   publicar:
+    # O filtro de branch do workflow_run olha só o nome da branch: o evento push exclui PRs vindos de forks.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
+      - name: Identificar a execução da CI
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ -z "$RUN_ID" ]; then
+            read -r RUN_ID SHA < <(gh run list -R "$GITHUB_REPOSITORY" -w CI -b main -e push -s success -L 1 \
+              --json databaseId,headSha -q '.[0] | "\(.databaseId) \(.headSha)"')
+          fi
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.ci.outputs.sha }}
+
+      - name: Baixar o relatório consolidado
+        uses: actions/download-artifact@v8
+        with:
+          name: relatorio-consolidado
+          path: relatorio
+          run-id: ${{ steps.ci.outputs.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Montar o site
+        env:
+          SHA: ${{ steps.ci.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.ci.outputs.run_id }}
         run: |
           mkdir -p site
-          cp -r evidencias/allure-report.html evidencias/load site/
-          cat > site/index.html <<'HTML'
+          cp relatorio/allure-report/index.html site/allure-report.html
+          cp -r evidencias/load site/
+          cat > site/index.html <<HTML
           <!doctype html>
           <html lang="pt-BR">
             <head>
@@ -48,11 +81,12 @@ jobs:
             <body>
               <h1>Evidências dos testes</h1>
               <ul>
-                <li><a href="allure-report.html">Relatório consolidado (Allure): API, E2E e mobile</a></li>
+                <li><a href="allure-report.html">Relatório consolidado (Allure): API, E2E, mobile e carga</a></li>
                 <li><a href="load/oficial/k6-dashboard.html">Teste de carga: 500 usuários por 5 minutos (k6)</a></li>
                 <li><a href="load/estresse/k6-dashboard.html">Teste de estresse: 500 usuários sem pausa (k6)</a></li>
               </ul>
-              <p><a href="https://github.com/MarcosJRuiz/out/tree/main/evidencias">Resumo dos resultados e histórico da pipeline</a></p>
+              <p>Relatório da <a href="${RUN_URL}">última CI aprovada na main</a> (commit <code>${SHA:0:7}</code>).</p>
+              <p><a href="https://github.com/MarcosJRuiz/out/tree/main/evidencias">Snapshot versionado das evidências e histórico da pipeline</a></p>
             </body>
           </html>
           HTML
