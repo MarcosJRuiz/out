@@ -1,5 +1,7 @@
 # Outsera — Automação de Testes
 
+[![Repositório no GitHub](https://img.shields.io/badge/Reposit%C3%B3rio-MarcosJRuiz%2Fout-181717?logo=github&logoColor=white)](https://github.com/MarcosJRuiz/out) &nbsp;&nbsp;&nbsp; [![Site de evidências](https://img.shields.io/badge/Site%20de%20evid%C3%AAncias-marcosjruiz.github.io%2Fout-7855D0?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik0yIDEyaDIwTTEyIDJhMTUgMTUgMCAwIDEgMCAyME0xMiAyYTE1IDE1IDAgMCAwIDAgMjAiLz48L3N2Zz4=)](https://marcosjruiz.github.io/out/)
+
 Projeto de automação de testes de **API**, **E2E**, **mobile** e **carga**, com execução a cada commit no GitHub Actions, relatório consolidado e evidências versionadas.
 
 | Módulo | Ferramentas                            | Aplicação testada                                                    | Testes                                |
@@ -10,21 +12,23 @@ Projeto de automação de testes de **API**, **E2E**, **mobile** e **carga**, co
 | Carga  | k6                                     | ServeRest (local, Docker)                                            | 500 usuários por 5 min (6 thresholds) |
 | CI/CD  | GitHub Actions                         | —                                                                    | 6 jobs                                |
 
-**Resultado atual:** 86 testes (80 funcionais e 6 thresholds de carga) — 84 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências em [`evidencias/`](evidencias/) e [online](https://marcosjruiz.github.io/out/).
+**Resultado atual:** 86 testes (80 funcionais e 6 thresholds de carga) — 84 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências no [relatório consolidado](https://marcosjruiz.github.io/out/#allure).
 
 ## Cobertura dos requisitos da avaliação
 
-| Requisito                                                                                                   | Onde                                                                                                                                                                                        |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API: status code, headers e corpo; positivos e negativos (dados inválidos, ausentes, autenticação inválida) | [Testes de API](#testes-de-api) — `support/assertions.ts` valida as três partes em toda resposta                                                                                            |
-| API: GET, POST, PUT e DELETE em vários endpoints; método inválido, payload malformado e dados ausentes      | `usuarios`, `produtos`, `carrinhos`, `login` e `metodos-http.spec.ts`                                                                                                                       |
-| E2E com Cucumber: login, navegação até um formulário, assertivas, positivos e negativos, Page Object        | `login.feature` (L1–L7) e `e2e/pages/`                                                                                                                                                      |
-| E2E: checkout (carrinho, pagamento, finalização), cartão inválido e endereço incompleto                     | `checkout.feature` (C1–C6); C5 e C6 comprovam defeitos do site                                                                                                                              |
-| E2E: relatório com evidências, incluindo falhas esperadas                                                   | Screenshot em cada validação; vídeo e trace nas falhas; relatório consolidado                                                                                                               |
-| CI/CD: API, E2E e mobile a cada commit, com relatório das execuções                                         | [Pipeline de CI](#pipeline-de-ci-github-actions), [`evidencias/pipeline/execucoes.md`](evidencias/pipeline/execucoes.md) e [execuções ao vivo](https://marcosjruiz.github.io/out/#pipeline) |
-| Mobile (Appium): login, navegação, validação de elemento, formulário; locators nativos                      | [Testes mobile](#testes-mobile)                                                                                                                                                             |
-| Carga (k6): 500 usuários por 5 min, métricas, gargalos, relatório e análise                                 | [Teste de carga](#teste-de-carga), [`load/ANALISE.md`](load/ANALISE.md) e [dashboard online](https://marcosjruiz.github.io/out/#carga)                                                      |
-| Projeto no GitHub, evidências salvas e README                                                               | Este repositório, [`evidencias/`](evidencias/) e este arquivo                                                                                                                               |
+| Requisito                                                                                                   | Onde                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API: status code, headers e corpo; positivos e negativos (dados inválidos, ausentes, autenticação inválida) | [Testes de API](#testes-de-api) — `support/assertions.ts` valida as três partes em toda resposta                                                                                        |
+| API: GET, POST, PUT e DELETE em vários endpoints; método inválido, payload malformado e dados ausentes      | `usuarios`, `produtos`, `carrinhos`, `login` e `metodos-http.spec.ts`                                                                                                                   |
+| API: relatório detalhado com os resultados de todos os testes                                               | [Relatório consolidado](https://marcosjruiz.github.io/out/#allure), com as requisições e respostas HTTP anexadas a cada teste                                                           |
+| E2E com Cucumber: login, navegação até um formulário, assertivas, positivos e negativos, Page Object        | [Testes E2E](#testes-e2e) — `login.feature` (L1–L7) e `e2e/pages/`                                                                                                                      |
+| E2E: checkout (carrinho, pagamento, finalização), cartão inválido e endereço incompleto                     | `checkout.feature` (C1–C6); C5 e C6 comprovam defeitos do site ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)) |
+| E2E: relatório com evidências, incluindo falhas esperadas                                                   | [Relatório consolidado](https://marcosjruiz.github.io/out/#allure): screenshot em cada validação; vídeo e trace nas falhas                                                              |
+| CI/CD: API, E2E e mobile a cada commit, com relatório das execuções                                         | [Pipeline de CI](#pipeline-de-ci-github-actions) e [execuções ao vivo](https://marcosjruiz.github.io/out/#pipeline)                                                                     |
+| Carga (k6): 500 usuários por 5 min, métricas, gargalos, relatório e análise                                 | [Teste de carga](#teste-de-carga), [Análise](load/ANALISE.md) e [dashboard online](https://marcosjruiz.github.io/out/#carga)                                                            |
+| Mobile (Appium): login, navegação, validação de elemento, formulário; locators nativos                      | [Testes mobile](#testes-mobile)                                                                                                                                                         |
+| Mobile: relatório detalhado com os resultados dos testes                                                    | [Relatório consolidado](https://marcosjruiz.github.io/out/#allure): screenshot em cada validação e da tela final; page source nas falhas                                                |
+| Projeto no GitHub, evidências salvas e README                                                               | [Este repositório](https://github.com/MarcosJRuiz/out), [site de evidências](https://marcosjruiz.github.io/out/), [`evidencias/`](evidencias/) (snapshot versionado) e este arquivo     |
 
 ## Estrutura
 
@@ -197,16 +201,22 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 
 [k6](https://k6.io) contra o ServeRest: **500 usuários simultâneos por 5 minutos** (rampa de 30 s, patamar de 5 min, descida de 30 s). Cada usuário faz login, lista os produtos e consulta um produto, com 1 s de pausa entre as ações.
 
-| Resultado (CI, 2 vCPUs) | Valor               | Critério             |
+| Resultado (CI, 4 vCPUs) | Valor               | Critério             |
 | ----------------------- | ------------------- | -------------------- |
-| Requisições / vazão     | 165.015 / 455 req/s | —                    |
+| Requisições / vazão     | 165.324 / 457 req/s | —                    |
 | Taxa de erro            | 0,00%               | < 1% sucesso         |
 | Checks                  | 100%                | > 99% sucesso        |
-| p95 / p99               | 13 ms / 30 ms       | p95 < 500 ms sucesso |
+| p95 / p99               | 4,9 ms / 9,2 ms     | p95 < 500 ms sucesso |
 
-- **Estresse complementar** (mesmos 500 usuários, sem pausa): a vazão para em ~450 req/s, o p95 sobe para 940 ms e surgem timeouts no login — o gargalo é a **CPU do processo único do ServeRest**. Análise completa, gargalos e recomendações em [`load/ANALISE.md`](load/ANALISE.md).
+- **Estresse complementar** (mesmos 500 usuários, sem pausa): a vazão para em ~450 req/s, o p95 sobe para 940 ms e surgem timeouts no login — o gargalo é a **CPU do processo único do ServeRest**. Gargalos e recomendações na [Análise](load/ANALISE.md).
 - **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários, duração e pausa configuráveis), toda segunda-feira e quando o teste de carga muda.
-- **Relatórios:** dashboard HTML do k6 (gráficos ao longo do tempo), resumo JSON e tabela de métricas no resumo da execução. Evidências em [`evidencias/load/`](evidencias/load/); dashboards online: [carga](https://marcosjruiz.github.io/out/#carga) e [estresse](https://marcosjruiz.github.io/out/#estresse).
+- **Relatórios:**
+  - [Carga](https://marcosjruiz.github.io/out/#carga) e [Estresse](https://marcosjruiz.github.io/out/#estresse): dashboards do k6, com os gráficos ao longo do tempo;
+  - [Análise](load/ANALISE.md): resultados, gargalos e recomendações;
+  - resumo de cada execução do workflow `Carga`: tabela de métricas e thresholds.
+
+  Dashboards e resumos em JSON versionados em [`evidencias/load/`](evidencias/load/).
+
 - **No relatório consolidado:** cada threshold do cenário oficial vira um teste do módulo **Carga** no Allure, com o valor medido e o dashboard anexado; o estresse fica em _Global Attachments_. Os dados são os do último teste de carga versionado em `evidencias/load/`, já que a carga não roda a cada commit.
 
 ```bash
@@ -276,4 +286,4 @@ Atualizar as evidências a partir da última execução bem-sucedida na `main` (
 
 - O E2E depende do site público AutomationExercise, que às vezes responde "under heavy load"; os testes tentam de novo automaticamente, mas indisponibilidade prolongada derruba o job.
 - Mobile só em Android; iOS exigiria runner macOS e driver XCUITest.
-- O teste de carga roda o k6 e o ServeRest na mesma máquina (2 vCPUs na CI); os números valem para esse ambiente.
+- O teste de carga roda o k6 e o ServeRest na mesma máquina (4 vCPUs na CI); os números valem para esse ambiente.
