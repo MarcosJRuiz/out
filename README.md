@@ -254,7 +254,7 @@ lint ──┬─> api-tests            ServeRest como container de serviço    
 
 | Onde                                               | O quê                                                                                                                                                                              |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [GitHub Pages](https://marcosjruiz.github.io/out/) | **Online, sem baixar nada:** relatório Allure consolidado e dashboards do k6, publicados a partir de `evidencias/`                                                                 |
+| [GitHub Pages](https://marcosjruiz.github.io/out/) | **Online, sem baixar nada:** relatório Allure da última CI aprovada na `main` e dashboards do k6, publicados automaticamente após cada CI verde                                    |
 | [`evidencias/`](evidencias/)                       | **Snapshot versionado:** relatório Allure consolidado (`allure-report.html`, arquivo único), resumo dos resultados, relatório das execuções da pipeline e teste de carga (`load/`) |
 | Página de cada execução no GitHub Actions          | Resumo por módulo e artifacts: `relatorio-consolidado`, `api-report`, `e2e-report`, `e2e-known-defects-report`, `mobile-report`                                                    |
 | Local, após rodar os testes                        | `api/reports/html`, `e2e/reports/cucumber-report.html`, `mobile/reports/html`; consolidado com `npm run relatorio` → `reports/allure-report/index.html`                            |
