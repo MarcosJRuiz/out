@@ -12,6 +12,15 @@ const BASE = `https://github.com/${REPOSITORIO}`;
 const PAGINAS = '.github/pages';
 const SITE = 'https://marcosjruiz.github.io/out/';
 const site = process.argv[2];
+const VERSAO = (process.env.SHA ?? '').slice(0, 7) || 'local';
+
+// Endereços internos levam a versão do commit: o GitHub Pages manda o navegador guardar os arquivos por 10 min,
+// e as páginas abertas na área de conteúdo continuariam vindo do cache depois de uma nova publicação.
+const versionar = (html) =>
+  html.replace(
+    /\b(data-src|href|src)="(?![a-z]+:|#|\.\/#)([^"?#]+\.(?:html|css|js|json))"/g,
+    `$1="$2?v=${VERSAO}"`,
+  );
 
 // Mesmo formato de âncora do GitHub: minúsculas, sem pontuação, espaços viram hífen.
 const ancora = (titulo) =>
@@ -64,7 +73,7 @@ async function converter(entrada, saida, titulo) {
     });
   writeFileSync(
     saida,
-    `<!doctype html>
+    versionar(`<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -80,7 +89,7 @@ ${corpo}
     </article>
   </body>
 </html>
-`,
+`),
   );
 }
 
@@ -105,11 +114,20 @@ for (const arquivo of readdirSync('docs/bugs')
 
 writeFileSync(
   path.join(site, 'index.html'),
-  readFileSync(path.join(PAGINAS, 'index.html'), 'utf8')
-    .replace('<!-- BUGS -->', itens.join('\n      '))
-    .replaceAll('__SHA__', (process.env.SHA ?? '').slice(0, 7)),
+  versionar(
+    readFileSync(path.join(PAGINAS, 'index.html'), 'utf8')
+      .replace('<!-- BUGS -->', itens.join('\n      '))
+      .replaceAll('__SHA__', (process.env.SHA ?? '').slice(0, 7))
+      .replaceAll('__VERSAO__', VERSAO),
+  ),
 );
-for (const arquivo of ['pipeline.html', 'markdown.css', 'tema.css', 'tema.js', 'k6.css'])
+// Lido sem cache pela página principal para saber se há uma publicação mais nova.
+writeFileSync(path.join(site, 'versao.json'), JSON.stringify({ versao: VERSAO }));
+writeFileSync(
+  path.join(site, 'pipeline.html'),
+  versionar(readFileSync(path.join(PAGINAS, 'pipeline.html'), 'utf8')),
+);
+for (const arquivo of ['markdown.css', 'tema.css', 'tema.js', 'k6.css'])
   copyFileSync(path.join(PAGINAS, arquivo), path.join(site, arquivo));
 
 // Dashboards do k6 (copiados de evidencias/load antes deste script): recebem as cores e o tema do site.
@@ -119,7 +137,9 @@ for (const cenario of readdirSync(path.join(site, 'load'))) {
     dashboard,
     readFileSync(dashboard, 'utf8').replace(
       '</head>',
-      '<link rel="stylesheet" href="../../tema.css" /><link rel="stylesheet" href="../../k6.css" /><script src="../../tema.js"></script></head>',
+      versionar(
+        '<link rel="stylesheet" href="../../tema.css" /><link rel="stylesheet" href="../../k6.css" /><script src="../../tema.js"></script></head>',
+      ),
     ),
   );
 }
