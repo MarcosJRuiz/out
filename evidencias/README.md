@@ -4,9 +4,9 @@ Snapshot versionado dos relatórios gerados pela pipeline. Os artifacts do GitHu
 
 | Item | Valor |
 |---|---|
-| Gerado em | 2026-11-04 14:28 UTC |
-| Commit testado | `6acb6e8` (main) |
-| Execução da pipeline | [#41844172972](https://github.com/MarcosJRuiz/out/actions/runs/41844172972) |
+| Gerado em | 2026-11-04 18:14 UTC |
+| Commit testado | `ee64a43` (main) |
+| Execução da pipeline | [#41881419708](https://github.com/MarcosJRuiz/out/actions/runs/41881419708) |
 
 ## Resumo dos resultados
 
@@ -15,7 +15,8 @@ Snapshot versionado dos relatórios gerados pela pipeline. Os artifacts do GitHu
 | API | 60 | 60 | 0 | 0 | 0 |
 | E2E | 13 | 11 | 0 | 2 | 0 |
 | Mobile | 7 | 7 | 0 | 0 | 0 |
-| **Total** | **80** | **78** | **0** | **2** | **0** |
+| Carga | 6 | 6 | 0 | 0 | 0 |
+| **Total** | **86** | **84** | **0** | **2** | **0** |
 
 ✅ Nenhuma falha inesperada.
 ℹ️ 2 falha(s) esperada(s): defeitos conhecidos do site, documentados em `docs/bugs/`.
@@ -24,7 +25,7 @@ Snapshot versionado dos relatórios gerados pela pipeline. Os artifacts do GitHu
 
 | Arquivo | Descrição |
 |---|---|
-| [`allure-report.html`](allure-report.html) | **Relatório consolidado** (API + E2E + mobile) em arquivo único: abra online em [GitHub Pages](https://marcosjruiz.github.io/out/allure-report.html) ou baixe e abra no navegador. Agrupado por módulo, com passos, screenshots, requisições HTTP de cada teste de API e os vídeos dos defeitos conhecidos (aba *Categories* → "Defeitos conhecidos do site") |
+| [`allure-report.html`](allure-report.html) | **Relatório consolidado** (API + E2E + mobile + carga) em arquivo único: abra online em [GitHub Pages](https://marcosjruiz.github.io/out/allure-report.html) ou baixe e abra no navegador. Agrupado por módulo, com passos, screenshots, requisições HTTP de cada teste de API e os vídeos dos defeitos conhecidos (aba *Categories* → "Defeitos conhecidos do site") |
 | [`pipeline/execucoes.md`](pipeline/execucoes.md) | Jobs da execução de referência e histórico recente da pipeline na `main` |
 | [`../docs/bugs/`](../docs/bugs/) | Bug reports dos defeitos encontrados (BUG-001 e BUG-002) |
 | [`load/`](load/) | Teste de carga (k6): dashboard e resumo do cenário oficial (500 usuários, 5 min, na CI) e do teste de estresse — análise em [`load/ANALISE.md`](../load/ANALISE.md) |
