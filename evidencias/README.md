@@ -4,9 +4,9 @@ Snapshot versionado dos relatórios gerados pela pipeline. Os artifacts do GitHu
 
 | Item | Valor |
 |---|---|
-| Gerado em | 2026-11-04 12:59 UTC |
-| Commit testado | `d02ad26` (main) |
-| Execução da pipeline | [#41830017860](https://github.com/MarcosJRuiz/out/actions/runs/41830017860) |
+| Gerado em | 2026-11-04 14:28 UTC |
+| Commit testado | `6acb6e8` (main) |
+| Execução da pipeline | [#41844172972](https://github.com/MarcosJRuiz/out/actions/runs/41844172972) |
 
 ## Resumo dos resultados
 

@@ -267,7 +267,7 @@ Atualizar as evidências a partir da última execução bem-sucedida na `main` (
 - **ServeRest local (Docker):** API com autenticação, perfis e regras de negócio reais, estável na CI e sem depender de serviço externo.
 - **Massa de dados pela API** em API e E2E: cada teste cria e remove os próprios dados, permitindo execução paralela e independente.
 - **Defeitos conhecidos como testes que falham:** os cenários esperam o comportamento correto, ficam marcados com `@known-defect` e rodam num job não bloqueante — o bug fica visível sem deixar a pipeline vermelha.
-- **Versões fixadas** em todos os `package.json` (`.npmrc` com `save-exact`), na imagem Docker e no driver do Appium.
+- **Versões fixadas** em todos os `package.json` (`.npmrc` com `save-exact`), na imagem Docker, no driver do Appium e no runner da CI (`ubuntu-24.04`).
 
 ## Limitações conhecidas
 
