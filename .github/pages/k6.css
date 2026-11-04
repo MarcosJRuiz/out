@@ -1,0 +1,48 @@
+/* Aplica as cores do Allure (tema.css) ao dashboard HTML do k6, que só tem tema claro e cores fixas. */
+html,
+body {
+  background: var(--superficie) !important;
+  color: var(--texto-secundario) !important;
+}
+* {
+  font-family: var(--fonte) !important;
+}
+h1,
+h2,
+h3 {
+  color: var(--texto) !important;
+}
+h4,
+p,
+th,
+td,
+span {
+  color: var(--texto-secundario) !important;
+}
+
+/* Tabela de métricas: linhas alternadas no tom do Allure. */
+tbody tr {
+  background: transparent !important;
+}
+tbody tr:nth-child(odd) {
+  background: var(--hover) !important;
+}
+.u-legend tbody tr:nth-child(n) {
+  background: transparent !important;
+}
+
+/* Seleção e tooltip dos gráficos. */
+.u-select {
+  background: var(--selecionado) !important;
+}
+div[style*='pointer-events: none'][style*='z-index: 10'] {
+  background: var(--elevado) !important;
+  color: var(--texto) !important;
+}
+
+/* Os gráficos são desenhados em canvas, que o CSS não recolore: no tema escuro, inverte claro/escuro e
+   gira o matiz de volta, mantendo a cor de cada série. */
+:root[data-theme='dark'] canvas,
+:root[data-theme='dark'] .u-marker {
+  filter: invert(0.88) hue-rotate(180deg);
+}

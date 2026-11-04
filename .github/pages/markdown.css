@@ -1,0 +1,158 @@
+/* Layout da prévia de Markdown do VS Code, com as cores do Allure (tema.css). */
+body {
+  margin: 0;
+  background: var(--superficie);
+  color: var(--texto);
+  font-family: var(--fonte);
+  font-size: 14px;
+  line-height: 22px;
+  word-wrap: break-word;
+}
+
+.markdown-body {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 26px 40px 64px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--texto);
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 24px 0 16px;
+}
+h1 {
+  font-size: 2em;
+  margin-top: 0;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--borda);
+}
+h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--borda);
+}
+h3 {
+  font-size: 1.25em;
+}
+
+p,
+ul,
+ol,
+table,
+blockquote,
+pre {
+  margin: 0 0 16px;
+}
+ul,
+ol {
+  padding-left: 2em;
+}
+li + li {
+  margin-top: 0.25em;
+}
+
+a {
+  color: var(--destaque-texto);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+hr {
+  height: 1px;
+  border: 0;
+  background: var(--borda);
+}
+
+code,
+pre {
+  font-family: var(--mono);
+  font-size: 1em;
+  line-height: 1.357em;
+}
+code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--hover);
+}
+pre {
+  padding: 16px;
+  border-radius: 3px;
+  overflow: auto;
+  background: var(--canvas);
+}
+pre code {
+  padding: 0;
+  background: none;
+  white-space: pre;
+}
+.highlight {
+  margin-bottom: 16px;
+}
+.highlight pre {
+  margin: 0;
+}
+/* Realce de sintaxe gerado pelo GitHub, com as cores do Allure. */
+.pl-c {
+  color: var(--texto-suave);
+  font-style: italic;
+}
+.pl-k,
+.pl-ent {
+  color: var(--destaque-texto);
+}
+.pl-s,
+.pl-pds {
+  color: var(--sucesso);
+}
+.pl-en,
+.pl-c1 {
+  color: var(--info);
+}
+.pl-v,
+.pl-smi {
+  color: var(--aviso);
+}
+
+blockquote {
+  padding: 0 16px 0 10px;
+  border-left: 5px solid var(--destaque);
+  background: var(--hover);
+}
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+th {
+  text-align: left;
+  border-bottom: 1px solid var(--borda);
+}
+th,
+td {
+  padding: 5px 10px;
+}
+tbody tr + tr td {
+  border-top: 1px solid var(--borda-suave);
+}
+
+strong {
+  color: var(--texto);
+}
+
+@media (max-width: 760px) {
+  .markdown-body {
+    padding: 16px;
+  }
+}

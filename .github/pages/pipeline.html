@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pipeline de CI</title>
+    <link rel="stylesheet" href="tema.css" />
+    <script src="tema.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--texto);
+        font: 14px/1.5 var(--fonte);
+      }
+      .conteudo {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 32px 40px 64px;
+      }
+      h1,
+      h2 {
+        color: var(--texto);
+      }
+      h1 {
+        margin: 0;
+        font-size: 26px;
+      }
+      h2 {
+        margin: 32px 0 12px;
+        font-size: 18px;
+      }
+      .subtitulo {
+        margin: 4px 0 0;
+        color: var(--texto-suave);
+      }
+      .subtitulo a,
+      .cabecalho a,
+      td a {
+        color: var(--destaque-texto);
+        text-decoration: none;
+      }
+      .subtitulo a:hover,
+      .cabecalho a:hover,
+      td a:hover {
+        text-decoration: underline;
+      }
+      .cartao {
+        background: var(--superficie);
+        border: 1px solid var(--borda);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .cabecalho {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--borda);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
+      }
+      .cabecalho strong {
+        font-size: 15px;
+      }
+      .cabecalho span {
+        color: var(--texto-suave);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 10px 20px;
+        text-align: left;
+        border-bottom: 1px solid var(--borda);
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--texto-suave);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: var(--elevado);
+      }
+      td.num {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .selo {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .success {
+        color: var(--sucesso);
+        background: var(--sucesso-fundo);
+      }
+      .failure,
+      .cancelled,
+      .timed_out {
+        color: var(--falha);
+        background: var(--falha-fundo);
+      }
+      .andamento {
+        color: var(--aviso);
+        background: var(--aviso-fundo);
+      }
+      .nota {
+        margin: 12px 0 0;
+        color: var(--texto-suave);
+        font-size: 13px;
+      }
+      .aviso {
+        padding: 20px;
+        color: var(--texto-suave);
+      }
+      @media (max-width: 760px) {
+        .conteudo {
+          padding: 16px;
+        }
+        th,
+        td {
+          padding: 8px 10px;
+        }
+        .ocultar-celular {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="conteudo">
+      <h1>Pipeline de CI</h1>
+      <p class="subtitulo">
+        Execuções do workflow CI na <code>main</code>, consultadas ao vivo na API do GitHub ·
+        <a
+          href="https://github.com/MarcosJRuiz/out/actions/workflows/ci.yml?query=branch%3Amain"
+          target="_blank"
+          rel="noopener"
+          >abrir no GitHub Actions ↗</a
+        >
+      </p>
+
+      <h2>Última execução</h2>
+      <div class="cartao" id="ultima"><div class="aviso">Carregando…</div></div>
+      <p class="nota">
+        O job <code>e2e-known-defects</code> aparece como sucesso porque não é bloqueante: os 2 cenários
+        falham como esperado (defeitos do site, BUG-001 e BUG-002) e a falha fica registrada no resumo da
+        execução.
+      </p>
+
+      <h2>Histórico recente</h2>
+      <div class="cartao" id="historico"><div class="aviso">Carregando…</div></div>
+    </div>
+
+    <script>
+      const API = 'https://api.github.com/repos/MarcosJRuiz/out/actions';
+      const NOMES = {
+        success: 'sucesso',
+        failure: 'falha',
+        cancelled: 'cancelada',
+        timed_out: 'tempo esgotado',
+        skipped: 'ignorado',
+      };
+
+      const buscar = async (url) => {
+        const resposta = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
+        if (!resposta.ok) throw new Error(`API do GitHub respondeu ${resposta.status}`);
+        return resposta.json();
+      };
+      const escapar = (t) =>
+        String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+      const selo = (status, conclusao) =>
+        status !== 'completed'
+          ? '<span class="selo andamento">em andamento</span>'
+          : `<span class="selo ${conclusao}">${NOMES[conclusao] ?? conclusao}</span>`;
+      const duracao = (inicio, fim) => {
+        if (!inicio || !fim) return '—';
+        const s = Math.round((new Date(fim) - new Date(inicio)) / 1000);
+        return `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}s`;
+      };
+      const data = (iso) =>
+        new Date(iso).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      const erro = (e) =>
+        `<div class="aviso">Não foi possível consultar a API do GitHub (${escapar(e.message)}). Veja direto no
+         <a href="https://github.com/MarcosJRuiz/out/actions/workflows/ci.yml?query=branch%3Amain" target="_blank" rel="noopener">GitHub Actions ↗</a>.</div>`;
+
+      (async () => {
+        let execucoes;
+        try {
+          execucoes = (await buscar(`${API}/workflows/ci.yml/runs?branch=main&event=push&per_page=15`))
+            .workflow_runs;
+        } catch (e) {
+          document.getElementById('ultima').innerHTML = erro(e);
+          document.getElementById('historico').innerHTML = erro(e);
+          return;
+        }
+
+        document.getElementById('historico').innerHTML = `
+          <table>
+            <thead><tr><th>Data</th><th>Resultado</th><th class="ocultar-celular">Commit</th><th>Duração</th><th>Execução</th></tr></thead>
+            <tbody>${execucoes
+              .map(
+                (r) => `<tr>
+                  <td class="num">${data(r.created_at)}</td>
+                  <td>${selo(r.status, r.conclusion)}</td>
+                  <td class="ocultar-celular">${escapar(r.head_commit.message.split('\n')[0])}</td>
+                  <td class="num">${r.status === 'completed' ? duracao(r.run_started_at, r.updated_at) : '—'}</td>
+                  <td><a href="${r.html_url}" target="_blank" rel="noopener">#${r.run_number} ↗</a></td>
+                </tr>`,
+              )
+              .join('')}</tbody>
+          </table>`;
+
+        const ultima = execucoes[0];
+        if (!ultima) {
+          document.getElementById('ultima').innerHTML =
+            '<div class="aviso">Nenhuma execução encontrada.</div>';
+          return;
+        }
+        try {
+          const { jobs } = await buscar(`${API}/runs/${ultima.id}/jobs`);
+          document.getElementById('ultima').innerHTML = `
+            <div class="cabecalho">
+              ${selo(ultima.status, ultima.conclusion)}
+              <strong>${escapar(ultima.head_commit.message.split('\n')[0])}</strong>
+              <span>commit <code>${ultima.head_sha.slice(0, 7)}</code> · ${data(ultima.created_at)} ·
+                <a href="${ultima.html_url}" target="_blank" rel="noopener">execução #${ultima.run_number} ↗</a></span>
+            </div>
+            <table>
+              <thead><tr><th>Job</th><th>Resultado</th><th>Duração</th><th>Log</th></tr></thead>
+              <tbody>${jobs
+                .map(
+                  (j) => `<tr>
+                    <td><code>${escapar(j.name)}</code></td>
+                    <td>${selo(j.status, j.conclusion)}</td>
+                    <td class="num">${duracao(j.started_at, j.completed_at)}</td>
+                    <td><a href="${j.html_url}" target="_blank" rel="noopener">log ↗</a></td>
+                  </tr>`,
+                )
+                .join('')}</tbody>
+            </table>`;
+        } catch (e) {
+          document.getElementById('ultima').innerHTML = erro(e);
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+/* Cores do relatório Allure, nos temas claro e escuro. O tema ativo vem de tema.js (data-theme no <html>). */
+:root {
+  color-scheme: light;
+  --canvas: #f1f5f7;
+  --superficie: #ffffff;
+  --elevado: #ffffff;
+  --texto: rgba(1, 10, 24, 0.83);
+  --texto-secundario: rgba(1, 18, 40, 0.68);
+  --texto-suave: rgba(2, 19, 44, 0.6);
+  --borda: rgba(11, 48, 86, 0.16);
+  --borda-suave: rgba(29, 79, 129, 0.08);
+  --hover: rgba(29, 79, 129, 0.08);
+  --selecionado: rgba(26, 76, 117, 0.1);
+  --destaque: #7855d0;
+  --destaque-texto: #7855d0;
+  --sucesso: #006f2d;
+  --sucesso-fundo: rgba(86, 214, 111, 0.08);
+  --falha: #990018;
+  --falha-fundo: rgba(255, 100, 100, 0.08);
+  --aviso: #705d00;
+  --aviso-fundo: rgba(255, 224, 74, 0.08);
+  --info: #0d71b2;
+  --fonte: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #2c343f;
+  --superficie: #1b2129;
+  --elevado: #242a34;
+  --texto: rgba(246, 250, 254, 0.96);
+  --texto-secundario: rgba(236, 244, 253, 0.82);
+  --texto-suave: rgba(222, 236, 252, 0.65);
+  --borda: rgba(189, 212, 255, 0.21);
+  --borda-suave: rgba(175, 197, 243, 0.12);
+  --hover: rgba(175, 197, 243, 0.12);
+  --selecionado: rgba(174, 202, 244, 0.17);
+  --destaque: #7855d0;
+  --destaque-texto: #c5b7ff;
+  --sucesso: #8ef2a0;
+  --sucesso-fundo: rgba(25, 171, 74, 0.12);
+  --falha: #ffaca5;
+  --falha-fundo: rgba(244, 63, 59, 0.12);
+  --aviso: #fff5b3;
+  --aviso-fundo: rgba(232, 189, 0, 0.12);
+  --info: #9bd0ff;
+}
