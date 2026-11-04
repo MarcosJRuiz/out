@@ -1,6 +1,6 @@
 import { defineConfig } from 'allure';
 
-// Relatório Allure consolidado (API + E2E + mobile), gerado como arquivo HTML único.
+// Relatório Allure consolidado (API + E2E + mobile + carga), gerado como arquivo HTML único.
 export default defineConfig({
   name: 'Outsera — Automação de Testes',
   output: './reports/allure-report',

@@ -2,15 +2,15 @@
 
 Projeto de automação de testes de **API**, **E2E**, **mobile** e **carga**, com execução a cada commit no GitHub Actions, relatório consolidado e evidências versionadas.
 
-| Módulo | Ferramentas                            | Aplicação testada                                                    | Testes                     |
-| ------ | -------------------------------------- | -------------------------------------------------------------------- | -------------------------- |
-| API    | Playwright Test                        | [ServeRest](https://serverest.dev) (local, Docker)                   | 60                         |
-| E2E    | Cucumber + Playwright                  | [AutomationExercise](https://automationexercise.com)                 | 11 + 2 defeitos conhecidos |
-| Mobile | Appium + WebdriverIO + Playwright Test | [My Demo App](https://github.com/saucelabs/my-demo-app-rn) (Android) | 7                          |
-| Carga  | k6                                     | ServeRest (local, Docker)                                            | 500 usuários por 5 min     |
-| CI/CD  | GitHub Actions                         | —                                                                    | 6 jobs                     |
+| Módulo | Ferramentas                            | Aplicação testada                                                    | Testes                                |
+| ------ | -------------------------------------- | -------------------------------------------------------------------- | ------------------------------------- |
+| API    | Playwright Test                        | [ServeRest](https://serverest.dev) (local, Docker)                   | 60                                    |
+| E2E    | Cucumber + Playwright                  | [AutomationExercise](https://automationexercise.com)                 | 11 + 2 defeitos conhecidos            |
+| Mobile | Appium + WebdriverIO + Playwright Test | [My Demo App](https://github.com/saucelabs/my-demo-app-rn) (Android) | 7                                     |
+| Carga  | k6                                     | ServeRest (local, Docker)                                            | 500 usuários por 5 min (6 thresholds) |
+| CI/CD  | GitHub Actions                         | —                                                                    | 6 jobs                                |
 
-**Resultado atual:** 80 testes — 78 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências em [`evidencias/`](evidencias/) e [online](https://marcosjruiz.github.io/out/).
+**Resultado atual:** 86 testes (80 funcionais e 6 thresholds de carga) — 84 aprovados, 0 falhas inesperadas e 2 falhas esperadas que comprovam defeitos do site testado ([BUG-001](docs/bugs/BUG-001-cartao-invalido-aceito.md), [BUG-002](docs/bugs/BUG-002-compra-sem-endereco-de-entrega.md)). Evidências em [`evidencias/`](evidencias/) e [online](https://marcosjruiz.github.io/out/).
 
 ## Cobertura dos requisitos da avaliação
 
@@ -206,6 +206,7 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 - **Estresse complementar** (mesmos 500 usuários, sem pausa): a vazão para em ~450 req/s, o p95 sobe para 940 ms e surgem timeouts no login — o gargalo é a **CPU do processo único do ServeRest**. Análise completa, gargalos e recomendações em [`load/ANALISE.md`](load/ANALISE.md).
 - **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários, duração e pausa configuráveis), toda segunda-feira e quando o teste de carga muda.
 - **Relatórios:** dashboard HTML do k6 (gráficos ao longo do tempo), resumo JSON e tabela de métricas no resumo da execução. Evidências em [`evidencias/load/`](evidencias/load/).
+- **No relatório consolidado:** cada threshold do cenário oficial vira um teste do módulo **Carga** no Allure, com o valor medido e o dashboard anexado; o estresse fica em _Global Attachments_. Os dados são os do último teste de carga versionado em `evidencias/load/`, já que a carga não roda a cada commit.
 
 ```bash
 npm run test:carga                                 # 500 usuários por 5 min (Docker: ServeRest + k6)
@@ -245,7 +246,7 @@ lint ──┬─> api-tests            ServeRest como container de serviço    
 | `publish-reports`   | Junta os resultados Allure dos módulos, gera o **relatório consolidado** e escreve o **resumo** na página da execução                | `relatorio-consolidado`    |
 
 - **Resumo da execução:** tabela com testes, aprovados, falhas, falhas esperadas e testes que passaram após retry, por módulo.
-- **Relatório consolidado:** Allure em **arquivo HTML único** (abre direto no navegador), agrupado por módulo (API, E2E, Mobile), com a categoria "Defeitos conhecidos do site (falha esperada)" e link de cada cenário para o bug report.
+- **Relatório consolidado:** Allure em **arquivo HTML único** (abre direto no navegador), agrupado por módulo (API, E2E, Mobile e Carga), com a categoria "Defeitos conhecidos do site (falha esperada)" e link de cada cenário para o bug report.
 - **Gerar o relatório consolidado localmente** (depois de rodar os testes): `npm run relatorio` → `reports/allure-report/index.html`.
 - **Otimizações:** cache do npm; `concurrency` cancela a execução anterior em novo push no mesmo branch; imagem do Android baixada com novas tentativas.
 
