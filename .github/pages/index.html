@@ -315,7 +315,7 @@
       matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sincronizar);
       quadro.addEventListener('load', () => {
         const doc = quadro.contentDocument;
-        if (quadro.getAttribute('src') === 'allure-report.html') {
+        if (quadro.getAttribute('src').startsWith('allure-report.html')) {
           const estilo = doc.createElement('style');
           // Oculta o botão de tema (o da barra superior vale para o site todo), a barra inferior e o botão de atalhos do Allure.
           estilo.textContent = `
