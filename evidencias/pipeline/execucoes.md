@@ -2,16 +2,16 @@
 
 ## Execução de referência
 
-[https://github.com/MarcosJRuiz/out/actions/runs/41830017860](https://github.com/MarcosJRuiz/out/actions/runs/41830017860) — commit `d02ad26` (main), 8m46s no total.
+[https://github.com/MarcosJRuiz/out/actions/runs/41844172972](https://github.com/MarcosJRuiz/out/actions/runs/41844172972) — commit `6acb6e8` (main), 17m38s no total.
 
 | Job | Resultado | Duração | Log |
 |---|---|---|---|
-| `lint` | ✅ success | 0m33s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41830017860/job/126574477458) |
-| `mobile-tests` | ✅ success | 7m38s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41830017860/job/126574774091) |
-| `api-tests` | ✅ success | 0m46s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41830017860/job/126574774212) |
-| `e2e-known-defects` | ✅ success | 1m32s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41830017860/job/126574774226) |
-| `e2e-tests` | ✅ success | 1m25s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41830017860/job/126574774356) |
-| `publish-reports` | ✅ success | 0m26s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41830017860/job/126578542433) |
+| `lint` | ✅ success | 0m27s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41844172972/job/126629554284) |
+| `e2e-known-defects` | ✅ success | 1m00s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41844172972/job/126629855242) |
+| `e2e-tests` | ✅ success | 1m06s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41844172972/job/126629855379) |
+| `mobile-tests` | ✅ success | 5m17s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41844172972/job/126629855406) |
+| `api-tests` | ✅ success | 0m32s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41844172972/job/126629855438) |
+| `publish-reports` | ✅ success | 0m32s | [log](https://github.com/MarcosJRuiz/out/actions/runs/41844172972/job/126632911996) |
 
 O job `e2e-known-defects` aparece como sucesso porque é não bloqueante: os 2 cenários falham como esperado (defeitos do site, ver `docs/bugs/`) e a falha fica registrada no resumo.
 
@@ -19,6 +19,8 @@ O job `e2e-known-defects` aparece como sucesso porque é não bloqueante: os 2 c
 
 | Data (UTC) | Resultado | Commit | Execução |
 |---|---|---|---|
+| 2026-11-04 14:05 | ✅ success | Merge pull request #14 from MarcosJRuiz/ci/atualiza-actions | [#41844172972](https://github.com/MarcosJRuiz/out/actions/runs/41844172972) |
+| 2026-11-04 13:01 | ✅ success | Merge pull request #13 from MarcosJRuiz/docs/evidencias-finais | [#41834282754](https://github.com/MarcosJRuiz/out/actions/runs/41834282754) |
 | 2026-11-04 12:31 | ✅ success | Merge pull request #12 from MarcosJRuiz/docs/ajustes-entrega | [#41830017860](https://github.com/MarcosJRuiz/out/actions/runs/41830017860) |
 | 2026-11-04 02:34 | ✅ success | Merge pull request #11 from MarcosJRuiz/feat/fase-6-carga | [#41761641859](https://github.com/MarcosJRuiz/out/actions/runs/41761641859) |
 | 2026-11-03 19:24 | ✅ success | Merge pull request #10 from MarcosJRuiz/feat/fase-5-fechamento | [#41702963736](https://github.com/MarcosJRuiz/out/actions/runs/41702963736) |
