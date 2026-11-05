@@ -209,7 +209,7 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 | p95 / p99               | 4,9 ms / 9,2 ms     | p95 < 500 ms sucesso |
 
 - **Estresse complementar** (mesmos 500 usuários, sem pausa): a vazão para em ~450 req/s, o p95 sobe para 940 ms e surgem timeouts no login — o gargalo é a **CPU do processo único do ServeRest**. Gargalos e recomendações na [Análise](load/ANALISE.md).
-- **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários, duração e pausa configuráveis), toda segunda-feira e quando o teste de carga muda.
+- **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários e duração configuráveis), toda segunda-feira e quando o teste de carga muda. Cada execução roda o cenário oficial e o estresse em paralelo, cada um com o próprio ServeRest, e mede a CPU do ServeRest e do k6 durante o teste.
 - **Relatórios:**
   - [Carga](https://marcosjruiz.github.io/out/#carga) e [Estresse](https://marcosjruiz.github.io/out/#estresse): dashboards do k6, com os gráficos ao longo do tempo;
   - [Análise](load/ANALISE.md): resultados, gargalos e recomendações;

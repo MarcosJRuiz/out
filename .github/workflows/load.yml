@@ -1,19 +1,21 @@
 name: Carga
 
 # Teste de carga fora do pipeline por commit (decisão do plano): roda manualmente, toda semana
-# e quando o próprio teste de carga muda.
+# e quando o próprio teste de carga muda. Cada execução roda os dois cenários em paralelo, cada um
+# com o próprio ServeRest: o oficial (500 usuários por 5 min, 1 s entre as ações) e o estresse
+# (mesmos usuários, sem pausa), que procura o limite do sistema.
 on:
   workflow_dispatch:
     inputs:
       vus:
-        description: Usuários simultâneos
+        description: Usuários simultâneos (nos dois cenários)
         default: '500'
       patamar:
-        description: 'Duração com todos os usuários (ex.: 5m)'
+        description: 'Duração com todos os usuários no cenário oficial (ex.: 5m)'
         default: 5m
-      pausa:
-        description: 'Segundos entre as ações de cada usuário (0 = estresse)'
-        default: '1'
+      patamar_estresse:
+        description: 'Duração com todos os usuários no estresse (ex.: 2m)'
+        default: 2m
   schedule:
     - cron: '0 6 * * 1' # segunda-feira, 06:00 UTC
   push:
@@ -27,8 +29,19 @@ concurrency:
 
 jobs:
   carga:
+    name: ${{ matrix.cenario }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cenario: oficial
+            patamar: ${{ inputs.patamar || '5m' }}
+            pausa: '1'
+          - cenario: estresse
+            patamar: ${{ inputs.patamar_estresse || '2m' }}
+            pausa: '0'
     services:
       serverest:
         image: paulogoncalvesbh/serverest:3.2.2
@@ -43,8 +56,8 @@ jobs:
       BASE_URL: http://localhost:3000
       RESULTADOS: load/reports
       VUS: ${{ inputs.vus || '500' }}
-      PATAMAR: ${{ inputs.patamar || '5m' }}
-      PAUSA: ${{ inputs.pausa || '1' }}
+      PATAMAR: ${{ matrix.patamar }}
+      PAUSA: ${{ matrix.pausa }}
       K6_WEB_DASHBOARD: 'true'
       K6_WEB_DASHBOARD_EXPORT: load/reports/k6-dashboard.html
     steps:
@@ -56,21 +69,42 @@ jobs:
 
       - name: Recursos da máquina de teste
         run: |
-          echo "CPUs: $(nproc) | Memória: $(free -h | awk '/Mem/ {print $2}')"
           mkdir -p load/reports
+          echo "CPUs: $(nproc) | Memória: $(free -h | awk '/Mem/ {print $2}')" | tee load/reports/maquina.txt
 
-      # Thresholds reprovados fazem o k6 sair com erro; o relatório é publicado mesmo assim.
-      - name: Executar teste de carga
-        run: k6 run load/scripts/carga-500vus.js
+      # Mede a CPU do ServeRest (docker stats) e do k6 (top) durante o teste, em % de um núcleo.
+      # No estresse, os thresholds reprovam de propósito (k6 sai com 99): o job não falha por isso.
+      - name: Executar teste de carga (${{ matrix.cenario }})
+        env:
+          SERVEREST: ${{ job.services.serverest.id }}
+          CENARIO: ${{ matrix.cenario }}
+        run: |
+          while true; do
+            docker stats --no-stream --format '{{.CPUPerc}}' "$SERVEREST" | tr -d '%' >> load/reports/cpu-serverest.txt
+          done &
+          AMOSTRAS=$!
+          set +e
+          k6 run load/scripts/carga-500vus.js &
+          K6=$!
+          top -b -d 2 -p "$K6" | awk -v pid="$K6" '$1 == pid { print $9; fflush() }' >> load/reports/cpu-k6.txt &
+          TOP=$!
+          wait "$K6"
+          codigo=$?
+          kill "$AMOSTRAS" "$TOP" 2>/dev/null
+          if [ "$CENARIO" = estresse ] && [ "$codigo" -eq 99 ]; then
+            echo "::notice title=Estresse::Thresholds reprovados, como esperado: o estresse procura o limite do sistema."
+            exit 0
+          fi
+          exit "$codigo"
 
       - name: Resumo da execução
         if: always()
-        run: node load/scripts/resumo.mjs load/reports/resumo-k6.json >> "$GITHUB_STEP_SUMMARY"
+        run: node load/scripts/resumo.mjs load/reports "${{ matrix.cenario }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publicar relatório
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: carga-report
+          name: carga-${{ matrix.cenario }}
           path: load/reports/
           if-no-files-found: warn
