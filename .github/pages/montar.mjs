@@ -4,8 +4,9 @@
 // abrem o item do menu correspondente e os demais abrem em nova aba.
 //
 // Uso: GITHUB_TOKEN=... SHA=<commit> node .github/pages/montar.mjs <pasta do site>
-import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { tabelasCarga } from './carga.mjs';
 
 const REPOSITORIO = 'MarcosJRuiz/out';
 const BASE = `https://github.com/${REPOSITORIO}`;
@@ -46,13 +47,13 @@ function noSite(arquivo) {
   return null;
 }
 
-async function converter(entrada, saida, titulo) {
+async function converter(entrada, saida, titulo, ajustar = (texto) => texto) {
   mkdirSync(path.dirname(saida), { recursive: true });
   const raiz = path.relative(path.dirname(saida), site) || '.';
   const resposta = await fetch('https://api.github.com/markdown', {
     method: 'POST',
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${process.env.GITHUB_TOKEN}` },
-    body: JSON.stringify({ text: readFileSync(entrada, 'utf8'), mode: 'gfm', context: REPOSITORIO }),
+    body: JSON.stringify({ text: ajustar(readFileSync(entrada, 'utf8')), mode: 'gfm', context: REPOSITORIO }),
   });
   if (!resposta.ok) throw new Error(`API de Markdown respondeu ${resposta.status} para ${entrada}`);
   const corpo = (await resposta.text())
@@ -93,8 +94,38 @@ ${corpo}
   );
 }
 
+// Na Análise publicada, as tabelas de resultado (entre <!-- tabelas:cenário --> e <!-- /tabelas:cenário -->) vêm da
+// execução de carga publicada no site; o texto continua o da execução de referência, e um aviso mostra as duas.
+function atualizarAnalise(texto) {
+  const execucoes = `${BASE}/actions/runs`;
+  const { execucao, commit } = existsSync(path.join(site, 'load', 'execucao.json'))
+    ? JSON.parse(readFileSync(path.join(site, 'load', 'execucao.json'), 'utf8'))
+    : {};
+  return texto
+    .replace(/<!-- tabelas:(\w+) -->[\s\S]*?<!-- \/tabelas:\1 -->/g, (bloco, cenario) =>
+      existsSync(path.join(site, 'load', cenario, 'resumo-k6.json'))
+        ? tabelasCarga(path.join(site, 'load', cenario), cenario)
+        : bloco,
+    )
+    .replace(/<!-- referencia:(\d+) -->/, (_, referencia) => {
+      const tabelas = execucao
+        ? `última execução de carga aprovada na \`main\` — [#${execucao}](${execucoes}/${execucao}), commit \`${commit.slice(0, 7)}\``
+        : 'resultado versionado em `evidencias/load`';
+      const texto =
+        String(execucao) === referencia
+          ? 'escritos a partir da mesma execução'
+          : `escritos a partir da execução de referência [#${referencia}](${execucoes}/${referencia}); se os números mudarem muito, o texto precisa ser revisto`;
+      return `> **Tabelas de resultado:** ${tabelas}.  \n> **Leitura, comparação, gargalos e recomendações:** ${texto}.`;
+    });
+}
+
 await converter('README.md', path.join(site, 'readme.html'), 'README');
-await converter('load/ANALISE.md', path.join(site, 'analise.html'), 'Análise do teste de carga');
+await converter(
+  'load/ANALISE.md',
+  path.join(site, 'analise.html'),
+  'Análise do teste de carga',
+  atualizarAnalise,
+);
 
 // Cada bug report vira um item do menu: o código (BUG-001) como título e a descrição como subtítulo.
 const itens = [];
@@ -131,7 +162,7 @@ for (const arquivo of ['markdown.css', 'tema.css', 'tema.js', 'k6.css'])
   copyFileSync(path.join(PAGINAS, arquivo), path.join(site, arquivo));
 
 // Dashboards do k6 (copiados de evidencias/load antes deste script): recebem as cores e o tema do site.
-for (const cenario of readdirSync(path.join(site, 'load'))) {
+for (const cenario of ['oficial', 'estresse']) {
   const dashboard = path.join(site, 'load', cenario, 'k6-dashboard.html');
   writeFileSync(
     dashboard,

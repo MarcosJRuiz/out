@@ -227,6 +227,9 @@ jobs:
     needs: [api-tests, e2e-tests, e2e-known-defects, mobile-tests]
     if: always()
     runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -268,6 +271,12 @@ jobs:
           name: mobile-report
           path: resultados/mobile
 
+      # Carga e estresse da última execução aprovada do workflow Carga na main (ou de evidencias/load).
+      - name: Baixar o último teste de carga
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/carga-mais-recente.sh resultados/carga
+
       - name: Consolidar resultados
         run: >-
           node scripts/relatorio-consolidado.mjs
@@ -275,7 +284,7 @@ jobs:
           E2E=resultados/e2e/allure-results
           E2E=resultados/e2e-known-defects/allure-results
           Mobile=resultados/mobile/allure-results
-          --carga=evidencias/load
+          --carga=resultados/carga
 
       - name: Gerar relatório Allure
         run: npx allure generate reports/allure-results

@@ -1,5 +1,7 @@
 # Análise do teste de carga — ServeRest
 
+<!-- referencia:41946011095 -->
+
 ## Objetivo e cenário
 
 Avaliar o comportamento da API ServeRest com **500 usuários simultâneos por 5 minutos** (item 4 da avaliação) e identificar potenciais gargalos.
@@ -16,18 +18,20 @@ Avaliar o comportamento da API ServeRest com **500 usuários simultâneos por 5 
 
 ## Resultado — cenário oficial (500 usuários, 5 min)
 
-**Aprovado em todos os critérios, com ampla folga.**
+<!-- tabelas:oficial -->
 
-| Métrica                                     | Resultado                        | Critério |
-| ------------------------------------------- | -------------------------------- | -------- |
-| Requisições                                 | 165.315                          | —        |
-| Vazão                                       | **457 req/s**                    | —        |
-| Fluxos completos (iterações)                | 55.104                           | —        |
-| Taxa de erro HTTP                           | **0,00%**                        | < 1% ✅  |
-| Checks (status e conteúdo de cada resposta) | **100%** (330.625)               | > 99% ✅ |
-| Duração média de um fluxo                   | 3,01 s (3 s são as pausas)       | —        |
-| CPU do ServeRest                            | média 50%, pico 87% de um núcleo | —        |
-| CPU do gerador k6                           | média 25% de um núcleo           | —        |
+**Aprovado em todos os critérios.**
+
+| Métrica                                     | Resultado                         | Critério |
+| ------------------------------------------- | --------------------------------- | -------- |
+| Requisições                                 | 165.315                           | —        |
+| Vazão                                       | **457 req/s**                     | —        |
+| Fluxos completos (iterações)                | 55.104                            | —        |
+| Taxa de erro HTTP                           | **0,00%**                         | < 1% ✅  |
+| Checks (status e conteúdo de cada resposta) | **100%** (330.625)                | > 99% ✅ |
+| Duração média de um fluxo                   | 3,01 s (3 s são as pausas)        | —        |
+| CPU do ServeRest                            | média 50%, pico 87% de um núcleo  | —        |
+| CPU do gerador k6                           | média 25%, pico 282% de um núcleo | —        |
 
 | Tempo de resposta    | Média  | Mediana | p90    | p95        | p99    | Máx.    |
 | -------------------- | ------ | ------- | ------ | ---------- | ------ | ------- |
@@ -35,6 +39,8 @@ Avaliar o comportamento da API ServeRest com **500 usuários simultâneos por 5 
 | Login                | 2,6 ms | 1,9 ms  | 4,4 ms | 5,4 ms     | 8,5 ms | 37,1 ms |
 | Listar produtos      | 1,5 ms | 0,8 ms  | 2,7 ms | 4,0 ms     | 8,3 ms | 45,9 ms |
 | Consultar produto    | 1,9 ms | 1,2 ms  | 3,8 ms | 5,2 ms     | 9,9 ms | 41,7 ms |
+
+<!-- /tabelas:oficial -->
 
 Leitura:
 
@@ -50,7 +56,33 @@ Leitura:
 
 Mesmo script e mesmos 500 usuários, **sem a pausa entre as ações** (`PAUSA=0`): cada usuário dispara a próxima requisição assim que recebe a anterior. Patamar de 2 min.
 
-Roda na mesma execução da CI do cenário oficial, em um job paralelo com o próprio ServeRest. A primeira medição do estresse foi feita localmente (Docker, **2 vCPUs e 2 GB**, em 03/11) e aparece na última coluna para comparação: é ela que mostra como o limite muda com a máquina.
+Roda na mesma execução da CI do cenário oficial, em um job paralelo com o próprio ServeRest. A primeira medição do estresse foi feita localmente (Docker, **2 vCPUs e 2 GB**, em 03/11) e aparece na comparação abaixo: é ela que mostra como o limite muda com a máquina.
+
+<!-- tabelas:estresse -->
+
+**Reprovado, como esperado no estresse:** p95 de todas as requisições, p95 de consultar produto.
+
+| Métrica                                     | Resultado                          | Critério |
+| ------------------------------------------- | ---------------------------------- | -------- |
+| Requisições                                 | 220.944                            | —        |
+| Vazão                                       | **1.227 req/s**                    | —        |
+| Fluxos completos (iterações)                | 73.647                             | —        |
+| Taxa de erro HTTP                           | **0,00%**                          | < 1% ✅  |
+| Checks (status e conteúdo de cada resposta) | **100%** (441.883)                 | > 99% ✅ |
+| Duração média de um fluxo                   | 1,02 s                             | —        |
+| CPU do ServeRest                            | média 118%, pico 136% de um núcleo | —        |
+| CPU do gerador k6                           | média 54%, pico 100% de um núcleo  | —        |
+
+| Tempo de resposta       | Média    | Mediana  | p90      | p95          | p99      | Máx.        |
+| ----------------------- | -------- | -------- | -------- | ------------ | -------- | ----------- |
+| Todas as requisições ❌ | 339,9 ms | 335,0 ms | 534,1 ms | **549,8 ms** | 573,4 ms | 35.823,8 ms |
+| Login                   | 342,2 ms | 324,7 ms | 397,3 ms | 408,6 ms     | 434,6 ms | 35.823,8 ms |
+| Listar produtos         | 272,6 ms | 314,0 ms | 374,7 ms | 386,2 ms     | 406,7 ms | 634,1 ms    |
+| Consultar produto ❌    | 405,0 ms | 471,2 ms | 555,5 ms | 564,7 ms     | 583,2 ms | 603,8 ms    |
+
+<!-- /tabelas:estresse -->
+
+Comparação entre os cenários na execução de referência e o teste local anterior:
 
 | Métrica                                       | Oficial (CI, 4 vCPUs) | **Estresse (CI, 4 vCPUs)** | Estresse local anterior (2 vCPUs)  |
 | --------------------------------------------- | --------------------- | -------------------------- | ---------------------------------- |
