@@ -85,7 +85,7 @@ Ambiente: Docker local com **2 vCPUs e 2 GB**. Reproduzível na CI pelo workflow
 npm run test:carga
 VUS=500 PATAMAR=2m PAUSA=0 npm run test:carga     # estresse
 
-# CI: aba Actions → workflow "Carga" → Run workflow (usuários, duração e pausa configuráveis)
+# CI: aba Actions → workflow "Carga" → Run workflow (roda o oficial e o estresse juntos; usuários e duração configuráveis)
 ```
 
 ## Evidências
