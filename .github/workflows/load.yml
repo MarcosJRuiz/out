@@ -1,7 +1,8 @@
 name: Carga
 
-# Teste de carga fora do pipeline por commit (decisão do plano): roda manualmente, toda semana
-# e quando o próprio teste de carga muda. Cada execução roda os dois cenários em paralelo, cada um
+# Teste de carga fora do pipeline de cada commit: roda a cada merge na main, nos PRs que mudam o teste de
+# carga, toda semana e manualmente. O site e o relatório consolidado usam a última execução aprovada na main
+# (scripts/carga-mais-recente.sh). Cada execução roda os dois cenários em paralelo, cada um
 # com o próprio ServeRest: o oficial (500 usuários por 5 min, 1 s entre as ações) e o estresse
 # (mesmos usuários, sem pausa), que procura o limite do sistema.
 on:
@@ -19,6 +20,8 @@ on:
   schedule:
     - cron: '0 6 * * 1' # segunda-feira, 06:00 UTC
   push:
+    branches: [main]
+  pull_request:
     paths:
       - 'load/**'
       - '.github/workflows/load.yml'

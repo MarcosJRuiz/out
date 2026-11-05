@@ -1,12 +1,12 @@
 name: Pages
 
-# Publica no GitHub Pages o relatório consolidado da última CI aprovada na main, os dashboards do k6 versionados
-# em evidencias/load, os bug reports, a pipeline e o README: o GitHub não renderiza HTML no repositório, então
-# tudo abre direto no navegador.
-# Só roda depois que a CI termina com sucesso; a execução manual publica a última CI aprovada.
+# Publica no GitHub Pages o relatório consolidado da última CI aprovada na main, os dashboards do k6 da última
+# execução de Carga aprovada, os bug reports, a pipeline e o README: o GitHub não renderiza HTML no repositório,
+# então tudo abre direto no navegador.
+# Roda quando a CI ou o Carga terminam com sucesso na main; a execução manual publica a última CI aprovada.
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: [CI, Carga]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -23,10 +23,11 @@ concurrency:
 
 jobs:
   publicar:
-    # O filtro de branch do workflow_run olha só o nome da branch: o evento push exclui PRs vindos de forks.
+    # O filtro de branch do workflow_run olha só o nome da branch: na CI, o evento push exclui PRs vindos de forks.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      (github.event.workflow_run.conclusion == 'success' &&
+        (github.event.workflow_run.name == 'Carga' || github.event.workflow_run.event == 'push'))
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
@@ -37,8 +38,9 @@ jobs:
         id: ci
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          # Disparado pelo Carga (ou manualmente): o relatório vem da última CI aprovada na main.
+          RUN_ID: ${{ github.event.workflow_run.name == 'CI' && github.event.workflow_run.id || '' }}
+          SHA: ${{ github.event.workflow_run.name == 'CI' && github.event.workflow_run.head_sha || '' }}
         run: |
           if [ -z "$RUN_ID" ]; then
             read -r RUN_ID SHA < <(gh run list -R "$GITHUB_REPOSITORY" -w CI -b main -e push -s success -L 1 \
@@ -67,11 +69,12 @@ jobs:
       - name: Montar o site
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.ci.outputs.sha }}
         run: |
           mkdir -p site
           cp relatorio/allure-report/index.html site/allure-report.html
-          cp -r evidencias/load site/
+          scripts/carga-mais-recente.sh site/load
           node .github/pages/montar.mjs site
 
       - uses: actions/configure-pages@v6

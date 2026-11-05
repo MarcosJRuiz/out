@@ -1,6 +1,7 @@
 // Consolida os resultados Allure de API, E2E e mobile em um único diretório e gera o resumo da execução.
-// Com --carga, inclui o último teste de carga versionado: cada threshold do cenário oficial vira um teste
-// do módulo "Carga" e o estresse entra como anexo global (os thresholds dele falham de propósito).
+// Com --carga, inclui o teste de carga da pasta indicada (na CI, a última execução aprovada do workflow Carga,
+// baixada por scripts/carga-mais-recente.sh): cada threshold do cenário oficial vira um teste do módulo "Carga"
+// e o estresse entra como anexo global (os thresholds dele falham de propósito).
 //
 // Uso: node scripts/relatorio-consolidado.mjs <Módulo>=<pasta allure-results> [...] [--carga=<pasta>]
 // Ex.:  node scripts/relatorio-consolidado.mjs API=api/reports/allure-results --carga=evidencias/load
@@ -132,6 +133,13 @@ function incluirCarga(pasta) {
     console.warn(`Aviso: ${oficial} não existe (relatório sem o módulo Carga)`);
     return [];
   }
+  // Origem dos dados (gravada por scripts/carga-mais-recente.sh); sem ela, é o resultado versionado.
+  const { execucao, commit } = existsSync(path.join(pasta, 'execucao.json'))
+    ? JSON.parse(readFileSync(path.join(pasta, 'execucao.json'), 'utf8'))
+    : {};
+  const fonte = execucao
+    ? `Resultado da execução #${execucao} do workflow Carga (commit ${commit.slice(0, 7)}).`
+    : 'Resultado do último teste de carga versionado em evidencias/load.';
   const anexo = (origem, nome, tipo) => {
     const source = `${randomUUID()}-attachment${path.extname(origem)}`;
     if (tipo === 'text/html') {
@@ -204,7 +212,7 @@ function incluirCarga(pasta) {
         stage: 'finished',
         start: horario,
         stop: horario,
-        description: `Medido: ${medido(def)}. Resultado do último teste de carga (workflow Carga), versionado em evidencias/load/oficial.`,
+        description: `Medido: ${medido(def)}. ${fonte}`,
         parameters: [
           { name: 'Medido', value: medido(def) },
           { name: 'Duração do teste', value: duracao },

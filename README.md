@@ -209,15 +209,15 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 | p95 / p99               | 5,0 ms / 8,9 ms     | p95 < 500 ms sucesso |
 
 - **Estresse complementar** (mesmos 500 usuários, sem pausa, na mesma execução): a vazão para em ~1.230 req/s com o ServeRest em ~1 núcleo de CPU (118%), mesmo com 4 vCPUs na máquina, e o p95 sobe para 550 ms — o gargalo é a **CPU do processo único do ServeRest**. Numa máquina de 2 vCPUs o teto foi ~450 req/s: a capacidade depende do hardware. Gargalos e recomendações na [Análise](load/ANALISE.md).
-- **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários e duração configuráveis), toda segunda-feira e quando o teste de carga muda. Cada execução roda o cenário oficial e o estresse em paralelo, cada um com o próprio ServeRest, e mede a CPU do ServeRest e do k6 durante o teste.
+- **Workflow próprio** (`.github/workflows/load.yml`), fora da CI de cada commit: roda a cada merge na `main`, nos PRs que mudam o teste de carga, toda segunda-feira e manualmente (usuários e duração configuráveis). Cada execução roda o cenário oficial e o estresse em paralelo, cada um com o próprio ServeRest, e mede a CPU do ServeRest e do k6 durante o teste.
 - **Relatórios:**
   - [Carga](https://marcosjruiz.github.io/out/#carga) e [Estresse](https://marcosjruiz.github.io/out/#estresse): dashboards do k6, com os gráficos ao longo do tempo;
   - [Análise](load/ANALISE.md): resultados, gargalos e recomendações;
   - resumo de cada execução do workflow `Carga`: tabela de métricas e thresholds.
 
-  Dashboards e resumos em JSON versionados em [`evidencias/load/`](evidencias/load/).
+  O site e o relatório consolidado usam sempre a **última execução aprovada na `main`**; as tabelas da Análise publicada também. [`evidencias/load/`](evidencias/load/) guarda o registro versionado (dashboards, resumos JSON e CPU) e é usado se não houver execução disponível.
 
-- **No relatório consolidado:** cada threshold do cenário oficial vira um teste do módulo **Carga** no Allure, com o valor medido e o dashboard anexado; o estresse fica em _Global Attachments_. Os dados são os do último teste de carga versionado em `evidencias/load/`, já que a carga não roda a cada commit.
+- **No relatório consolidado:** cada threshold do cenário oficial vira um teste do módulo **Carga** no Allure, com o valor medido e o dashboard anexado; o estresse fica em _Global Attachments_. Os dados são os da última execução aprovada do workflow `Carga` na `main`, indicada na descrição de cada teste.
 
 ```bash
 npm run test:carga                                 # 500 usuários por 5 min (Docker: ServeRest + k6)
