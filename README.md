@@ -203,12 +203,12 @@ Appium (driver UiAutomator2) controlado pelo WebdriverIO, com o **Playwright Tes
 
 | Resultado (CI, 4 vCPUs) | Valor               | Critério             |
 | ----------------------- | ------------------- | -------------------- |
-| Requisições / vazão     | 165.324 / 457 req/s | —                    |
+| Requisições / vazão     | 165.315 / 457 req/s | —                    |
 | Taxa de erro            | 0,00%               | < 1% sucesso         |
 | Checks                  | 100%                | > 99% sucesso        |
-| p95 / p99               | 4,9 ms / 9,2 ms     | p95 < 500 ms sucesso |
+| p95 / p99               | 5,0 ms / 8,9 ms     | p95 < 500 ms sucesso |
 
-- **Estresse complementar** (mesmos 500 usuários, sem pausa): a vazão para em ~450 req/s, o p95 sobe para 940 ms e surgem timeouts no login — o gargalo é a **CPU do processo único do ServeRest**. Gargalos e recomendações na [Análise](load/ANALISE.md).
+- **Estresse complementar** (mesmos 500 usuários, sem pausa, na mesma execução): a vazão para em ~1.230 req/s com o ServeRest em ~1 núcleo de CPU (118%), mesmo com 4 vCPUs na máquina, e o p95 sobe para 550 ms — o gargalo é a **CPU do processo único do ServeRest**. Numa máquina de 2 vCPUs o teto foi ~450 req/s: a capacidade depende do hardware. Gargalos e recomendações na [Análise](load/ANALISE.md).
 - **Fora do pipeline por commit:** workflow próprio `.github/workflows/load.yml`, executado manualmente (usuários e duração configuráveis), toda segunda-feira e quando o teste de carga muda. Cada execução roda o cenário oficial e o estresse em paralelo, cada um com o próprio ServeRest, e mede a CPU do ServeRest e do k6 durante o teste.
 - **Relatórios:**
   - [Carga](https://marcosjruiz.github.io/out/#carga) e [Estresse](https://marcosjruiz.github.io/out/#estresse): dashboards do k6, com os gráficos ao longo do tempo;
@@ -286,4 +286,4 @@ Atualizar as evidências a partir da última execução bem-sucedida na `main` (
 
 - O E2E depende do site público AutomationExercise, que às vezes responde "under heavy load"; os testes tentam de novo automaticamente, mas indisponibilidade prolongada derruba o job.
 - Mobile só em Android; iOS exigiria runner macOS e driver XCUITest.
-- O teste de carga roda o k6 e o ServeRest na mesma máquina (4 vCPUs na CI); os números valem para esse ambiente.
+- O teste de carga roda o k6 e o ServeRest na mesma máquina (4 vCPUs na CI); os números, principalmente o teto do estresse, valem para esse ambiente.

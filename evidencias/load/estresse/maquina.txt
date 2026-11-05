@@ -1,0 +1,1 @@
+CPUs: 4 | Memória: 15Gi
